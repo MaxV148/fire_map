@@ -10,13 +10,14 @@ url = URL.create(
     password=settings.db_password,
     host=settings.db_host,
     port=settings.db_port,
-    database=settings.db_name
+    database=settings.db_name,
 )
 
 engine = create_engine(url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
 
 def get_db():
     db = SessionLocal()

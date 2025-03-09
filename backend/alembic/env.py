@@ -9,13 +9,64 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
+
 # Import settings to get database credentials
 from src.conf.model import Settings
+
 settings = Settings()
 
 
-config.set_main_option("sqlalchemy.url",f"postgresql+psycopg://{settings.db_user}:{settings.db_password}@localhost:5432/{settings.db_name}")
+config.set_main_option(
+    "sqlalchemy.url",
+    f"postgresql+psycopg://{settings.db_user}:{settings.db_password}@localhost:5432/{settings.db_name}",
+)
 
+EXCLUDED_TABLES = {
+    "spatial_ref_sys",
+    "faces",
+    "pagc_lex",
+    "state",
+    "tiger",
+    "pagc_rules",
+    "state_lookup",
+    "countysub_lookup",
+    "zip_state_loc",
+    "street_type_lookup",
+    "tabblock",
+    "topology",
+    "tract",
+    "bg",
+    "geocode_settings",
+    "featnames",
+    "zcta5",
+    "addrfeat",
+    "zip_lookup",
+    "zip_lookup_all",
+    "cousub",
+    "tabblock20",
+    "county",
+    "geocode_settings_default",
+    "layer",
+    "loader_lookuptables",
+    "loader_platform",
+    "addr",
+    "edges",
+    "county_lookup",
+    "place_lookup",
+    "direction_lookup",
+    "loader_variables",
+    "place",
+    "zip_lookup_base",
+    "pagc_gaz",
+    "zip_state",
+    "secondary_unit_lookup",
+}
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == "table" and name in EXCLUDED_TABLES:
+        return False
+    return True
 
 
 # Interpret the config file for Python logging.
@@ -26,6 +77,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from src.domain.user.model import *
+from src.domain.exercises.model import *
 from src.infrastructure.postgresql.db import Base
 
 target_metadata = Base.metadata
@@ -75,7 +127,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
         )
 
         with context.begin_transaction():

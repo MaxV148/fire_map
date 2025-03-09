@@ -15,12 +15,15 @@ dependencies = [
     "loguru==0.7.3",
     "PyJWT==2.10.1",
     "passlib==1.7.4",
+    "shapely==2.0.7",
+    "fastapi-pagination==0.12.34",
     "bcrypt==4.2.1",
     "sqlalchemy==2.0.38",
     "fastapi==0.115.8",
     "uvicorn==0.34.0",
     "PyJWT==2.10.1",
-    "passlib==1.7.4"
+    "passlib==1.7.4",
+    "GeoAlchemy2==0.17.1"
 ]
 
 [project.optional-dependencies]
@@ -37,7 +40,7 @@ packages = [
     "src",
     "src.domain",
     "src.domain.user",
-    "src.domain.location",
+    "src.domain.exercises",
     "src.infrastructure.postgresql",
     "src.conf"
 ]

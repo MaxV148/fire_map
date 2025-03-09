@@ -66,3 +66,35 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Ensure full width layout */
+html, body, #root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Ensure AppBar takes full width */
+.MuiAppBar-root {
+  width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+/* Ensure container is properly centered */
+.MuiContainer-root {
+  box-sizing: border-box;
+}
+
+/* Ensure proper spacing in the dashboard */
+.dashboard-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure proper drawer behavior */
+.MuiDrawer-paper {
+  box-sizing: border-box;
+}
