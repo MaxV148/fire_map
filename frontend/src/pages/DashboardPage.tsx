@@ -25,6 +25,8 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import authService from '../services/authService';
 import DashboardWidget from '../components/DashboardWidget';
+import LocationMapExample from '../components/LocationMapExample';
+import {UserProfile} from "../services/authService";
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -32,12 +34,7 @@ interface DashboardPageProps {
 
 const DashboardPage = ({ onLogout }: DashboardPageProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<{
-    username: string;
-    email: string;
-    role: string;
-    id: string;
-  } | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     // Get user profile from auth service
@@ -48,10 +45,8 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
     } else {
       // Fallback to mock data if no profile is available
       setUserProfile({
-        id: '1',
+        id: 1,
         username: 'user123',
-        email: 'user@example.com',
-        role: 'User'
       });
     }
   }, []);
@@ -81,8 +76,6 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
           {userProfile?.username.charAt(0).toUpperCase() || 'U'}
         </Avatar>
         <Typography variant="h6">{userProfile?.username || 'User'}</Typography>
-        <Typography variant="body2" color="text.secondary">{userProfile?.email || 'No email'}</Typography>
-        <Typography variant="body2" color="primary">{userProfile?.role || 'No role'}</Typography>
       </Box>
       <Divider />
       <List>
@@ -186,18 +179,8 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
           
           {/* Map overview widget */}
           <Grid2 item xs={12} md={8}>
-            <DashboardWidget title="Fire Map Overview" height={400}>
-              <Box 
-                sx={{ 
-                  bgcolor: 'action.hover', 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center' 
-                }}
-              >
-                <Typography color="text.secondary">Map visualization will be displayed here</Typography>
-              </Box>
+            <DashboardWidget title="Fire Map Overview" height={600}>
+              <LocationMapExample />
             </DashboardWidget>
           </Grid2>
           

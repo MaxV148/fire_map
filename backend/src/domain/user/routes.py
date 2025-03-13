@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from src.domain.user.dto import UserCreate, TokenResponse, UserLogin
+from src.domain.user.dto import UserCreate, Authresponse, UserLogin
 from src.infrastructure.postgresql.db import get_db
 from src.domain.user.model import User
 from starlette import status
@@ -11,7 +11,7 @@ from src.domain.user.dependency import get_current_user
 user_router = APIRouter(prefix="/user")
 
 
-@user_router.post("/register", response_model=TokenResponse)
+@user_router.post("/register", response_model=Authresponse)
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == user_data.username).first()
     if existing_user:
@@ -25,11 +25,15 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    access_token = create_access_token({"sub": new_user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return Authresponse(
+        username=new_user.username,
+        access_token=create_access_token({"sub": new_user.username}),
+        token_type="bearer",
+        id=new_user.id,
+    )
 
 
-@user_router.post("/login", response_model=TokenResponse)
+@user_router.post("/login", response_model=Authresponse)
 def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
     # Find user
     user = db.query(User).filter(User.username == user_data.username).first()
@@ -39,9 +43,12 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
             detail="Invalid username or password",
         )
 
-    # Generate JWT token
-    access_token = create_access_token({"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return Authresponse(
+        id=user.id,
+        username=user.username,
+        access_token=create_access_token({"sub": user.username}),
+        token_type="bearer",
+    )
 
 
 @user_router.get("/me")

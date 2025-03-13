@@ -29,6 +29,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest==8.3.4",
+    "pytest-html==4.1.1",
+    "httpx==0.28.1",
     "ruff==0.7.4"
 ]
 
@@ -40,7 +42,11 @@ packages = [
     "src",
     "src.domain",
     "src.domain.user",
-    "src.domain.exercises",
+    "src.domain.role",
+    "src.domain.event",
+    "src.domain.issue",
+    "src.domain.tag",
+    "src.domain.vehicletype",
     "src.infrastructure.postgresql",
     "src.conf"
 ]

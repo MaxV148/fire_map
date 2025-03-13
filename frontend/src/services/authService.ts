@@ -3,17 +3,15 @@ interface LoginCredentials {
   password: string;
 }
 
-interface UserProfile {
-  id: string;
+export interface UserProfile {
+  id: number;
   username: string;
-  email: string;
-  role: string;
-  // Add any other user properties you need
 }
 
 interface AuthResponse {
-  token: string;
-  user: UserProfile;
+  access_token: string;
+  id: number;
+  username: string;
 }
 
 const TOKEN_KEY = 'token';
@@ -41,21 +39,26 @@ export const authService = {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Login failed. Please check your credentials.');
+      }else{
+        window.console.log(response);
       }
 
       const data: AuthResponse = await response.json();
       
       // Store the token and user profile
-      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(TOKEN_KEY, data.access_token);
       
-      // Store user profile if available
-      if (data.user) {
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      if (data.username) {
+        const profile: UserProfile = {
+          username: data.username,
+          id: data.id
+        }
+        localStorage.setItem(USER_KEY, JSON.stringify(profile));
       }
       
       return data;
     } catch (error) {
-      throw error;
+      return Promise.reject(error);
     }
   },
 

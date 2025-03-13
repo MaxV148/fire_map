@@ -1,5 +1,6 @@
 from logging.config import fileConfig
-
+import os
+import sys
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
@@ -77,7 +78,11 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from src.domain.user.model import *
-from src.domain.exercises.model import *
+from src.domain.role.model import *
+from src.domain.event.model import *
+from src.domain.issue.model import *
+from src.domain.tag.model import *
+from src.domain.vehicletype.model import *
 from src.infrastructure.postgresql.db import Base
 
 target_metadata = Base.metadata
