@@ -7,6 +7,14 @@ on:
     branches: [ main ]
 
 jobs:
+  one:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump LOG LEVEL
+        run: echo "$LOG_LEVEL"
+      - name: Dump job context
+        run: echo "$DB_HOST"
+
   test:
     runs-on: ubuntu-latest
     environment: deployment
