@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    environment: deployment
     services:
       postgres:
         image: postgis/postgis:16-3.4
@@ -46,120 +47,120 @@ jobs:
       run: |
         pytest tests/ -v --html=report.html --self-contained-html
 
-  build-and-deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-    
-    - name: Build backend
-      working-directory: ./backend
-      run: |
-        python -m pip install --upgrade pip
-        pip install build
-        python -m build
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'yarn'
-        cache-dependency-path: frontend/yarn.lock
-    
-    - name: Build frontend
-      working-directory: ./frontend
-      run: |
-        yarn install
-        yarn build
-    
-    - name: Generate deployment timestamp
-      id: timestamp
-      run: echo "timestamp=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
-    
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-    
-    - name: Add server to known hosts
-      run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-    
-    - name: Deploy backend
-      env:
-        SERVER_IP: ${{ secrets.SERVER_IP }}
-        SERVER_USER: ${{ secrets.SERVER_USER }}
-        RELEASE_NUMBER: ${{ steps.timestamp.outputs.timestamp }}
-      run: |
-        # Create release directory
-        ssh $SERVER_USER@$SERVER_IP "mkdir -p /var/www/fire-map-backend/releases/$RELEASE_NUMBER"
-        
-        # Copy backend files
-        scp -r backend/dist/*.whl $SERVER_USER@$SERVER_IP:/var/www/fire-map-backend/releases/$RELEASE_NUMBER/
-        scp backend/Dockerfile $SERVER_USER@$SERVER_IP:/var/www/fire-map-backend/releases/$RELEASE_NUMBER/
-        
-        # Create or update symlink to current release
-        ssh $SERVER_USER@$SERVER_IP "ln -sfn /var/www/fire-map-backend/releases/$RELEASE_NUMBER /var/www/fire-map-backend/current"
-        
-        # Install and restart service
-        ssh $SERVER_USER@$SERVER_IP "cd /var/www/fire-map-backend/current && \
-          docker build -t fire-map-backend . && \
-          docker stop fire-map-backend-container || true && \
-          docker rm fire-map-backend-container || true && \
-          docker run -d --name fire-map-backend-container -p 8000:8000 \
-          -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
-          --restart unless-stopped fire-map-backend"
-    
-    - name: Deploy frontend
-      env:
-        SERVER_IP: ${{ secrets.SERVER_IP }}
-        SERVER_USER: ${{ secrets.SERVER_USER }}
-        RELEASE_NUMBER: ${{ steps.timestamp.outputs.timestamp }}
-      run: |
-        # Create release directory
-        ssh $SERVER_USER@$SERVER_IP "mkdir -p /var/www/fire-map-frontend/releases/$RELEASE_NUMBER"
-        
-        # Compress frontend build
-        tar -czf frontend-build.tar.gz -C frontend/dist .
-        
-        # Copy frontend files
-        scp frontend-build.tar.gz $SERVER_USER@$SERVER_IP:/var/www/fire-map-frontend/releases/$RELEASE_NUMBER/
-        
-        # Extract files on server
-        ssh $SERVER_USER@$SERVER_IP "cd /var/www/fire-map-frontend/releases/$RELEASE_NUMBER && \
-          tar -xzf frontend-build.tar.gz && \
-          rm frontend-build.tar.gz"
-        
-        # Create or update symlink to current release
-        ssh $SERVER_USER@$SERVER_IP "ln -sfn /var/www/fire-map-frontend/releases/$RELEASE_NUMBER /var/www/fire-map-frontend/current"
-        
-        # Configure Nginx (if needed)
-        ssh $SERVER_USER@$SERVER_IP "if [ ! -f /etc/nginx/sites-available/fire-map-frontend ]; then \
-          echo 'server { \
-            listen 80; \
-            server_name your-domain.com; \
-            root /var/www/fire-map-frontend/current; \
-            index index.html; \
-            location / { \
-              try_files \$uri \$uri/ /index.html; \
-            } \
-            location /api { \
-              proxy_pass http://localhost:8000; \
-              proxy_set_header Host \$host; \
-              proxy_set_header X-Real-IP \$remote_addr; \
-            } \
-          }' | sudo tee /etc/nginx/sites-available/fire-map-frontend && \
-          sudo ln -sf /etc/nginx/sites-available/fire-map-frontend /etc/nginx/sites-enabled/ && \
-          sudo nginx -t && \
-          sudo systemctl reload nginx; \
-        else \
-          sudo systemctl reload nginx; \
-        fi" 
+#  build-and-deploy:
+#    needs: test
+#    runs-on: ubuntu-latest
+#    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+#
+#    steps:
+#    - uses: actions/checkout@v4
+#
+#    - name: Set up Python
+#      uses: actions/setup-python@v5
+#      with:
+#        python-version: '3.12'
+#
+#    - name: Build backend
+#      working-directory: ./backend
+#      run: |
+#        python -m pip install --upgrade pip
+#        pip install build
+#        python -m build
+#
+#    - name: Set up Node.js
+#      uses: actions/setup-node@v4
+#      with:
+#        node-version: '20'
+#        cache: 'yarn'
+#        cache-dependency-path: frontend/yarn.lock
+#
+#    - name: Build frontend
+#      working-directory: ./frontend
+#      run: |
+#        yarn install
+#        yarn build
+#
+#    - name: Generate deployment timestamp
+#      id: timestamp
+#      run: echo "timestamp=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+#
+#    - name: Set up SSH
+#      uses: webfactory/ssh-agent@v0.9.0
+#      with:
+#        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+#
+#    - name: Add server to known hosts
+#      run: |
+#        mkdir -p ~/.ssh
+#        ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+#
+#    - name: Deploy backend
+#      env:
+#        SERVER_IP: ${{ secrets.SERVER_IP }}
+#        SERVER_USER: ${{ secrets.SERVER_USER }}
+#        RELEASE_NUMBER: ${{ steps.timestamp.outputs.timestamp }}
+#      run: |
+#        # Create release directory
+#        ssh $SERVER_USER@$SERVER_IP "mkdir -p /var/www/fire-map-backend/releases/$RELEASE_NUMBER"
+#
+#        # Copy backend files
+#        scp -r backend/dist/*.whl $SERVER_USER@$SERVER_IP:/var/www/fire-map-backend/releases/$RELEASE_NUMBER/
+#        scp backend/Dockerfile $SERVER_USER@$SERVER_IP:/var/www/fire-map-backend/releases/$RELEASE_NUMBER/
+#
+#        # Create or update symlink to current release
+#        ssh $SERVER_USER@$SERVER_IP "ln -sfn /var/www/fire-map-backend/releases/$RELEASE_NUMBER /var/www/fire-map-backend/current"
+#
+#        # Install and restart service
+#        ssh $SERVER_USER@$SERVER_IP "cd /var/www/fire-map-backend/current && \
+#          docker build -t fire-map-backend . && \
+#          docker stop fire-map-backend-container || true && \
+#          docker rm fire-map-backend-container || true && \
+#          docker run -d --name fire-map-backend-container -p 8000:8000 \
+#          -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
+#          --restart unless-stopped fire-map-backend"
+#
+#    - name: Deploy frontend
+#      env:
+#        SERVER_IP: ${{ secrets.SERVER_IP }}
+#        SERVER_USER: ${{ secrets.SERVER_USER }}
+#        RELEASE_NUMBER: ${{ steps.timestamp.outputs.timestamp }}
+#      run: |
+#        # Create release directory
+#        ssh $SERVER_USER@$SERVER_IP "mkdir -p /var/www/fire-map-frontend/releases/$RELEASE_NUMBER"
+#
+#        # Compress frontend build
+#        tar -czf frontend-build.tar.gz -C frontend/dist .
+#
+#        # Copy frontend files
+#        scp frontend-build.tar.gz $SERVER_USER@$SERVER_IP:/var/www/fire-map-frontend/releases/$RELEASE_NUMBER/
+#
+#        # Extract files on server
+#        ssh $SERVER_USER@$SERVER_IP "cd /var/www/fire-map-frontend/releases/$RELEASE_NUMBER && \
+#          tar -xzf frontend-build.tar.gz && \
+#          rm frontend-build.tar.gz"
+#
+#        # Create or update symlink to current release
+#        ssh $SERVER_USER@$SERVER_IP "ln -sfn /var/www/fire-map-frontend/releases/$RELEASE_NUMBER /var/www/fire-map-frontend/current"
+#
+#        # Configure Nginx (if needed)
+#        ssh $SERVER_USER@$SERVER_IP "if [ ! -f /etc/nginx/sites-available/fire-map-frontend ]; then \
+#          echo 'server { \
+#            listen 80; \
+#            server_name your-domain.com; \
+#            root /var/www/fire-map-frontend/current; \
+#            index index.html; \
+#            location / { \
+#              try_files \$uri \$uri/ /index.html; \
+#            } \
+#            location /api { \
+#              proxy_pass http://localhost:8000; \
+#              proxy_set_header Host \$host; \
+#              proxy_set_header X-Real-IP \$remote_addr; \
+#            } \
+#          }' | sudo tee /etc/nginx/sites-available/fire-map-frontend && \
+#          sudo ln -sf /etc/nginx/sites-available/fire-map-frontend /etc/nginx/sites-enabled/ && \
+#          sudo nginx -t && \
+#          sudo systemctl reload nginx; \
+#        else \
+#          sudo systemctl reload nginx; \
+#        fi"
