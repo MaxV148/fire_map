@@ -9,6 +9,7 @@ on:
 jobs:
   one:
     runs-on: ubuntu-latest
+    environment: deployment
     steps:
       - name: Dump LOG LEVEL
         run: echo "$LOG_LEVEL"
