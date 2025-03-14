@@ -40,6 +40,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install .[dev]
     
+    - name: Run database migrations
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql+psycopg://root:test123@postgres:5432/fire_backend_test
+      run: |
+        alembic upgrade head
+    
     - name: Run tests
       working-directory: ./backend
       env:
