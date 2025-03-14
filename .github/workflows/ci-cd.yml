@@ -44,6 +44,15 @@ jobs:
       working-directory: ./backend
       env:
         DATABASE_URL: postgresql+psycopg://root:test123@postgres:5432/fire_backend_test
+        LOG_LEVEL: debug
+        DB_HOST: postgres
+        DB_PORT: 5432
+        DB_USER: root
+        DB_PASSWORD: test123
+        DB_NAME: fire_backend
+        SECRET_KEY: mysecretkey
+        ALGORITHM: HS256
+        ACCESS_TOKEN_EXPIRE_MINUTES: 30
       run: |
         alembic upgrade head
     
