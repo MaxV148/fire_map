@@ -24,6 +24,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        volumes:
+          - ./backend/tests/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
 
     steps:
     - uses: actions/checkout@v4
