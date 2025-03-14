@@ -43,7 +43,7 @@ jobs:
     - name: Run tests
       working-directory: ./backend
       env:
-        DATABASE_URL: postgresql://root:test123@localhost:5432/fire_backend_test
+        DATABASE_URL: postgresql://root:test123@postgres:5432/fire_backend_test
         LOG_LEVEL: debug
         DB_HOST: postgres
         DB_PORT: 5432
