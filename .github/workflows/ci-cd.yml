@@ -19,6 +19,8 @@ jobs:
           POSTGRES_DB: fire_backend_test
         ports:
           - 5432:5432
+        volumes:
+          - ./backend/tests/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
