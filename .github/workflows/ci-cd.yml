@@ -7,15 +7,6 @@ on:
     branches: [ main ]
 
 jobs:
-  one:
-    runs-on: ubuntu-latest
-    environment: deployment
-    steps:
-      - name: Dump LOG LEVEL
-        run: echo "$LOG_LEVEL"
-      - name: Dump job context
-        run: echo "$DB_HOST"
-
   test:
     runs-on: ubuntu-latest
     environment: deployment
@@ -23,9 +14,9 @@ jobs:
       postgres:
         image: postgis/postgis:16-3.4
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: fire_map_test
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: test123
+          POSTGRES_DB: fire_backend_test
         ports:
           - 5432:5432
         options: >-
@@ -52,7 +43,16 @@ jobs:
     - name: Run tests
       working-directory: ./backend
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fire_map_test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fire_backend_test
+        LOG_LEVEL: debug
+        DB_HOST: postgres
+        DB_PORT: 5432
+        DB_USER: root
+        DB_PASSWORD: test123
+        DB_NAME: fire_backend
+        SECRET_KEY: mysecretkey
+        ALGORITHM: HS256
+        ACCESS_TOKEN_EXPIRE_MINUTES: 30
       run: |
         pytest tests/ -v --html=report.html --self-contained-html
 
