@@ -15,7 +15,10 @@
     "@fontsource/roboto": "^5.2.5",
     "@mui/icons-material": "^6.4.6",
     "@mui/material": "^6.4.6",
+    "@types/lodash": "^4.17.16",
+    "date-fns": "^4.1.0",
     "leaflet": "^1.9.4",
+    "lodash": "^4.17.21",
     "react": "^19.0.0-rc.1",
     "react-dom": "^19.0.0-rc.1",
     "react-leaflet": "^5.0.0"

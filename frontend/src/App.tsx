@@ -12,7 +12,23 @@ function App() {
 
     useEffect(() => {
         // Check if user is authenticated using the authService
-        setIsAuthenticated(authService.isAuthenticated());
+        const authenticated = authService.isAuthenticated();
+        setIsAuthenticated(authenticated);
+        
+        // Set up redirect callback for when token expires or user is inactive
+        authService.setRedirectCallback(() => {
+            setIsAuthenticated(false);
+        });
+        
+        // Start the idle timer if user is authenticated
+        if (authenticated) {
+            authService.startIdleTimer();
+        }
+        
+        // Clean up event listeners when component unmounts
+        return () => {
+            authService.stopIdleTimer();
+        };
     }, []);
 
     const handleLogout = () => {
