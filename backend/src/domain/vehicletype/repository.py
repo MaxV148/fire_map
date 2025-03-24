@@ -39,7 +39,9 @@ class VehicleTypeRepository:
         result = self.db.execute(query).scalars().all()
         return result
 
-    def update(self, vehicle_id: int, vehicle_data: VehicleTypeUpdate) -> Optional[VehicleType]:
+    def update(
+        self, vehicle_id: int, vehicle_data: VehicleTypeUpdate
+    ) -> Optional[VehicleType]:
         """Update a vehicle type"""
         # First check if the vehicle type exists
         db_vehicle = self.get_by_id(vehicle_id)
@@ -53,10 +55,14 @@ class VehicleTypeRepository:
 
         # Execute update if there's data to update
         if update_data:
-            stmt = update(VehicleType).where(VehicleType.id == vehicle_id).values(**update_data)
+            stmt = (
+                update(VehicleType)
+                .where(VehicleType.id == vehicle_id)
+                .values(**update_data)
+            )
             self.db.execute(stmt)
             self.db.commit()
-            
+
             # Refresh the vehicle type object
             return self.get_by_id(vehicle_id)
         return db_vehicle
@@ -72,4 +78,4 @@ class VehicleTypeRepository:
         stmt = delete(VehicleType).where(VehicleType.id == vehicle_id)
         self.db.execute(stmt)
         self.db.commit()
-        return True 
+        return True

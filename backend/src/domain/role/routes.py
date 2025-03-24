@@ -16,7 +16,7 @@ role_router = APIRouter(prefix="/role")
 def create_role(
     role_data: RoleCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new role"""
     repository = RoleRepository(db)
@@ -25,8 +25,7 @@ def create_role(
 
 @role_router.get("", response_model=List[RoleResponse])
 def get_all_roles(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Get all roles"""
     repository = RoleRepository(db)
@@ -37,7 +36,7 @@ def get_all_roles(
 def get_role(
     role_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get a role by ID"""
     repository = RoleRepository(db)
@@ -45,7 +44,7 @@ def get_role(
     if not role:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Role with ID {role_id} not found"
+            detail=f"Role with ID {role_id} not found",
         )
     return role
 
@@ -55,7 +54,7 @@ def update_role(
     role_id: int,
     role_data: RoleUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update a role"""
     repository = RoleRepository(db)
@@ -63,7 +62,7 @@ def update_role(
     if not updated_role:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Role with ID {role_id} not found"
+            detail=f"Role with ID {role_id} not found",
         )
     return updated_role
 
@@ -72,7 +71,7 @@ def update_role(
 def delete_role(
     role_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a role"""
     repository = RoleRepository(db)
@@ -80,6 +79,6 @@ def delete_role(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Role with ID {role_id} not found"
+            detail=f"Role with ID {role_id} not found",
         )
-    return None 
+    return None

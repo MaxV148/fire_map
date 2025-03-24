@@ -12,11 +12,13 @@ from src.domain.issue.dto import IssueCreate, IssueUpdate, IssueResponse
 issue_router = APIRouter(prefix="/issue")
 
 
-@issue_router.post("", response_model=IssueResponse, status_code=status.HTTP_201_CREATED)
+@issue_router.post(
+    "", response_model=IssueResponse, status_code=status.HTTP_201_CREATED
+)
 def create_issue(
     issue_data: IssueCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new issue"""
     repository = IssueRepository(db)
@@ -25,8 +27,7 @@ def create_issue(
 
 @issue_router.get("", response_model=List[IssueResponse])
 def get_all_issues(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Get all issues"""
     repository = IssueRepository(db)
@@ -37,7 +38,7 @@ def get_all_issues(
 def get_issues_by_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all issues created by a specific user"""
     repository = IssueRepository(db)
@@ -48,7 +49,7 @@ def get_issues_by_user(
 def get_issues_by_tag(
     tag_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all issues with a specific tag"""
     repository = IssueRepository(db)
@@ -59,7 +60,7 @@ def get_issues_by_tag(
 def get_issue(
     issue_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get an issue by ID"""
     repository = IssueRepository(db)
@@ -67,7 +68,7 @@ def get_issue(
     if not issue:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with ID {issue_id} not found"
+            detail=f"Issue with ID {issue_id} not found",
         )
     return issue
 
@@ -77,7 +78,7 @@ def update_issue(
     issue_id: int,
     issue_data: IssueUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update an issue"""
     repository = IssueRepository(db)
@@ -85,7 +86,7 @@ def update_issue(
     if not updated_issue:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with ID {issue_id} not found"
+            detail=f"Issue with ID {issue_id} not found",
         )
     return updated_issue
 
@@ -94,7 +95,7 @@ def update_issue(
 def delete_issue(
     issue_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Delete an issue"""
     repository = IssueRepository(db)
@@ -102,6 +103,6 @@ def delete_issue(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with ID {issue_id} not found"
+            detail=f"Issue with ID {issue_id} not found",
         )
-    return None 
+    return None

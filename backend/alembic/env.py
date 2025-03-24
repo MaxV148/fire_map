@@ -83,6 +83,7 @@ from src.domain.event.model import *
 from src.domain.issue.model import *
 from src.domain.tag.model import *
 from src.domain.vehicletype.model import *
+from src.domain.invite.model import *
 from src.infrastructure.postgresql.db import Base
 
 target_metadata = Base.metadata

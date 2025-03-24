@@ -6,17 +6,23 @@ from src.infrastructure.postgresql.db import get_db
 from src.domain.user.dependency import get_current_user
 from src.domain.user.model import User
 from src.domain.vehicletype.repository import VehicleTypeRepository
-from src.domain.vehicletype.dto import VehicleTypeCreate, VehicleTypeUpdate, VehicleTypeResponse
+from src.domain.vehicletype.dto import (
+    VehicleTypeCreate,
+    VehicleTypeUpdate,
+    VehicleTypeResponse,
+)
 
 # Create router
 vehicle_router = APIRouter(prefix="/vehicle")
 
 
-@vehicle_router.post("", response_model=VehicleTypeResponse, status_code=status.HTTP_201_CREATED)
+@vehicle_router.post(
+    "", response_model=VehicleTypeResponse, status_code=status.HTTP_201_CREATED
+)
 def create_vehicle_type(
     vehicle_data: VehicleTypeCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new vehicle type"""
     repository = VehicleTypeRepository(db)
@@ -25,8 +31,7 @@ def create_vehicle_type(
 
 @vehicle_router.get("", response_model=List[VehicleTypeResponse])
 def get_all_vehicle_types(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Get all vehicle types"""
     repository = VehicleTypeRepository(db)
@@ -37,7 +42,7 @@ def get_all_vehicle_types(
 def get_vehicle_type(
     vehicle_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get a vehicle type by ID"""
     repository = VehicleTypeRepository(db)
@@ -45,7 +50,7 @@ def get_vehicle_type(
     if not vehicle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vehicle type with ID {vehicle_id} not found"
+            detail=f"Vehicle type with ID {vehicle_id} not found",
         )
     return vehicle
 
@@ -54,7 +59,7 @@ def get_vehicle_type(
 def get_vehicle_type_by_name(
     name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get a vehicle type by name"""
     repository = VehicleTypeRepository(db)
@@ -62,7 +67,7 @@ def get_vehicle_type_by_name(
     if not vehicle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vehicle type with name '{name}' not found"
+            detail=f"Vehicle type with name '{name}' not found",
         )
     return vehicle
 
@@ -72,7 +77,7 @@ def update_vehicle_type(
     vehicle_id: int,
     vehicle_data: VehicleTypeUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update a vehicle type"""
     repository = VehicleTypeRepository(db)
@@ -80,7 +85,7 @@ def update_vehicle_type(
     if not updated_vehicle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vehicle type with ID {vehicle_id} not found"
+            detail=f"Vehicle type with ID {vehicle_id} not found",
         )
     return updated_vehicle
 
@@ -89,7 +94,7 @@ def update_vehicle_type(
 def delete_vehicle_type(
     vehicle_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a vehicle type"""
     repository = VehicleTypeRepository(db)
@@ -97,6 +102,6 @@ def delete_vehicle_type(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vehicle type with ID {vehicle_id} not found"
+            detail=f"Vehicle type with ID {vehicle_id} not found",
         )
-    return None 
+    return None

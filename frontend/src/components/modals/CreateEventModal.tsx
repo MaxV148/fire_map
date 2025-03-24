@@ -37,6 +37,7 @@ interface CreateEventModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: (createdEventId: number) => void;
+  initialLocation?: [number, number] | null;
 }
 
 export interface EventFormData {
@@ -69,7 +70,7 @@ const initialIssueFormData: IssueFormData = {
   tag_id: null
 };
 
-const CreateEventModal = ({ open, onClose, onSuccess }: CreateEventModalProps) => {
+const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateEventModalProps) => {
   const [formType, setFormType] = useState<FormType>('event');
   const [eventFormData, setEventFormData] = useState<EventFormData>(initialEventFormData);
   const [issueFormData, setIssueFormData] = useState<IssueFormData>(initialIssueFormData);
@@ -100,6 +101,24 @@ const CreateEventModal = ({ open, onClose, onSuccess }: CreateEventModalProps) =
       fetchVehicleTypes();
     }
   }, [open]);
+
+  // Handle initialLocation when provided
+  useEffect(() => {
+    if (initialLocation && open) {
+      // Convert from [lat, lng] to [lng, lat] format expected by the backend
+      const [lat, lng] = initialLocation;
+      const backendLocation: [number, number] = [lng, lat];
+      
+      // Set the location in the form data
+      setEventFormData(prevData => ({
+        ...prevData,
+        location: backendLocation
+      }));
+      
+      // Format the location for display
+      setLocationDisplayText(`[${lng.toFixed(6)}, ${lat.toFixed(6)}]`);
+    }
+  }, [initialLocation, open]);
 
   const fetchTags = async () => {
     setIsLoadingTags(true);

@@ -13,7 +13,9 @@ class EventRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, event_data: EventCreate, current_user: Optional[User] = None) -> Event:
+    def create(
+        self, event_data: EventCreate, current_user: Optional[User] = None
+    ) -> Event:
         """Create a new event"""
         # Convert location coordinates to WKT point format
         wkt_point = None
@@ -82,7 +84,7 @@ class EventRepository:
             update_data["tag_id"] = event_data.tag_id
         if event_data.vehicle_id is not None:
             update_data["vehicle_id"] = event_data.vehicle_id
-        
+
         # Handle location update
         if event_data.location is not None:
             if len(event_data.location) >= 2:
@@ -97,7 +99,7 @@ class EventRepository:
             stmt = update(Event).where(Event.id == event_id).values(**update_data)
             self.db.execute(stmt)
             self.db.commit()
-            
+
             # Refresh the event object
             return self.get_by_id(event_id)
         return db_event
@@ -119,6 +121,6 @@ class EventRepository:
         """Extract coordinates from a geometry point"""
         if event.location is None:
             return None
-        
+
         point = to_shape(event.location)
-        return [point.x, point.y] 
+        return [point.x, point.y]

@@ -5,6 +5,7 @@ from src.domain.event.routes import event_router
 from src.domain.tag.routes import tag_router
 from src.domain.vehicletype.routes import vehicle_router
 from src.domain.issue.routes import issue_router
+from src.domain.invite.routes import invite_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -29,3 +30,4 @@ app.include_router(event_router, prefix="/v1")
 app.include_router(tag_router, prefix="/v1")
 app.include_router(vehicle_router, prefix="/v1")
 app.include_router(issue_router, prefix="/v1")
+app.include_router(invite_router, prefix="/v1")

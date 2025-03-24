@@ -42,7 +42,7 @@ const EntityList = ({
   entities,
   isLoading,
   error,
-  title = entityType === 'event' ? 'Events' : 'Issues',
+  title = '',
   onEntityClick,
   onEntityEdit,
   emptyMessage = `No ${entityType}s found`,

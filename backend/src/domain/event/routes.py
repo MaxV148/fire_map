@@ -12,38 +12,39 @@ from src.domain.event.dto import EventCreate, EventUpdate, EventResponse
 event_router = APIRouter(prefix="/event")
 
 
-@event_router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
+@event_router.post(
+    "", response_model=EventResponse, status_code=status.HTTP_201_CREATED
+)
 def create_event(
     event_data: EventCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new event"""
 
     repository = EventRepository(db)
     event = repository.create(event_data, current_user)
-    
+
     # Convert the location from WKBElement to a list of coordinates
     if event.location is not None:
         event.location = repository.get_location_coordinates(event)
-        
+
     return event
 
 
 @event_router.get("", response_model=List[EventResponse])
 def get_all_events(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Get all events"""
     repository = EventRepository(db)
     events = repository.get_all()
-    
+
     # Convert the location from WKBElement to a list of coordinates for each event
     for event in events:
         if event.location is not None:
             event.location = repository.get_location_coordinates(event)
-            
+
     return events
 
 
@@ -51,17 +52,17 @@ def get_all_events(
 def get_events_by_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all events created by a specific user"""
     repository = EventRepository(db)
     events = repository.get_by_user(user_id)
-    
+
     # Convert the location from WKBElement to a list of coordinates for each event
     for event in events:
         if event.location is not None:
             event.location = repository.get_location_coordinates(event)
-            
+
     return events
 
 
@@ -69,17 +70,17 @@ def get_events_by_user(
 def get_events_by_tag(
     tag_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all events with a specific tag"""
     repository = EventRepository(db)
     events = repository.get_by_tag(tag_id)
-    
+
     # Convert the location from WKBElement to a list of coordinates for each event
     for event in events:
         if event.location is not None:
             event.location = repository.get_location_coordinates(event)
-            
+
     return events
 
 
@@ -87,17 +88,17 @@ def get_events_by_tag(
 def get_events_by_vehicle(
     vehicle_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all events with a specific vehicle type"""
     repository = EventRepository(db)
     events = repository.get_by_vehicle(vehicle_id)
-    
+
     # Convert the location from WKBElement to a list of coordinates for each event
     for event in events:
         if event.location is not None:
             event.location = repository.get_location_coordinates(event)
-            
+
     return events
 
 
@@ -105,7 +106,7 @@ def get_events_by_vehicle(
 def get_event(
     event_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get an event by ID"""
     repository = EventRepository(db)
@@ -113,13 +114,13 @@ def get_event(
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Event with ID {event_id} not found"
+            detail=f"Event with ID {event_id} not found",
         )
-    
+
     # Convert the location from WKBElement to a list of coordinates
     if event.location is not None:
         event.location = repository.get_location_coordinates(event)
-        
+
     return event
 
 
@@ -128,7 +129,7 @@ def update_event(
     event_id: int,
     event_data: EventUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update an event"""
     repository = EventRepository(db)
@@ -136,13 +137,13 @@ def update_event(
     if not updated_event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Event with ID {event_id} not found"
+            detail=f"Event with ID {event_id} not found",
         )
-    
+
     # Convert the location from WKBElement to a list of coordinates
     if updated_event.location is not None:
         updated_event.location = repository.get_location_coordinates(updated_event)
-        
+
     return updated_event
 
 
@@ -150,7 +151,7 @@ def update_event(
 def delete_event(
     event_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Delete an event"""
     repository = EventRepository(db)
@@ -158,6 +159,6 @@ def delete_event(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Event with ID {event_id} not found"
+            detail=f"Event with ID {event_id} not found",
         )
-    return None 
+    return None

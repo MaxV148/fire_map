@@ -53,7 +53,7 @@ class RoleRepository:
             stmt = update(Role).where(Role.id == role_id).values(**update_data)
             self.db.execute(stmt)
             self.db.commit()
-            
+
             # Refresh the role object
             return self.get_by_id(role_id)
         return db_role
@@ -69,4 +69,4 @@ class RoleRepository:
         stmt = delete(Role).where(Role.id == role_id)
         self.db.execute(stmt)
         self.db.commit()
-        return True 
+        return True

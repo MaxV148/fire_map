@@ -16,7 +16,7 @@ tag_router = APIRouter(prefix="/tag")
 def create_tag(
     tag_data: TagCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new tag"""
     repository = TagRepository(db)
@@ -25,8 +25,7 @@ def create_tag(
 
 @tag_router.get("", response_model=List[TagResponse])
 def get_all_tags(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Get all tags"""
     repository = TagRepository(db)
@@ -37,7 +36,7 @@ def get_all_tags(
 def get_tag(
     tag_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get a tag by ID"""
     repository = TagRepository(db)
@@ -45,7 +44,7 @@ def get_tag(
     if not tag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tag with ID {tag_id} not found"
+            detail=f"Tag with ID {tag_id} not found",
         )
     return tag
 
@@ -54,7 +53,7 @@ def get_tag(
 def get_tag_by_name(
     name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get a tag by name"""
     repository = TagRepository(db)
@@ -62,7 +61,7 @@ def get_tag_by_name(
     if not tag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tag with name '{name}' not found"
+            detail=f"Tag with name '{name}' not found",
         )
     return tag
 
@@ -72,7 +71,7 @@ def update_tag(
     tag_id: int,
     tag_data: TagUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update a tag"""
     repository = TagRepository(db)
@@ -80,7 +79,7 @@ def update_tag(
     if not updated_tag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tag with ID {tag_id} not found"
+            detail=f"Tag with ID {tag_id} not found",
         )
     return updated_tag
 
@@ -89,7 +88,7 @@ def update_tag(
 def delete_tag(
     tag_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a tag"""
     repository = TagRepository(db)
@@ -97,6 +96,6 @@ def delete_tag(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tag with ID {tag_id} not found"
+            detail=f"Tag with ID {tag_id} not found",
         )
-    return None 
+    return None

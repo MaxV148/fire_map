@@ -27,7 +27,7 @@ settings = Settings(
     log_level="INFO",
     secret_key="test_secret_key",
     algorithm="HS256",
-    access_token_expire_minutes=30
+    access_token_expire_minutes=30,
 )
 
 # Use the settings for database configuration
@@ -45,10 +45,10 @@ def db() -> Generator[Session, None, None]:
     """
     # Drop all tables to ensure a clean state
     Base.metadata.drop_all(bind=engine)
-    
+
     # Create the database tables
     Base.metadata.create_all(bind=engine)
-    
+
     # Create a new session for the test
     db = TestingSessionLocal()
     try:
@@ -64,29 +64,30 @@ def client(db: Session) -> Generator[TestClient, None, None]:
     """
     Create a test client with a mocked database session.
     """
+
     # Override the get_db dependency
     def override_get_db():
         try:
             yield db
         finally:
             pass
-    
+
     # Mock the current user for authentication
     test_user = User(id=1, username="testuser", password="hashed_password")
     db.add(test_user)
     db.commit()
-    
+
     def override_get_current_user():
         return test_user
-    
+
     # Override dependencies
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = override_get_current_user
-    
+
     # Create a test client
     with TestClient(app) as test_client:
         yield test_client
-    
+
     # Reset the dependency overrides
     app.dependency_overrides = {}
 
@@ -137,20 +138,22 @@ def test_vehicle_type(db: Session) -> VehicleType:
 
 
 @pytest.fixture(scope="function")
-def test_event(db: Session, test_user: User, test_tag: Tag, test_vehicle_type: VehicleType) -> Event:
+def test_event(
+    db: Session, test_user: User, test_tag: Tag, test_vehicle_type: VehicleType
+) -> Event:
     """
     Create a test event.
     """
     from geoalchemy2.functions import ST_GeomFromText
-    
+
     # Create an event with a proper geometry point
     event = Event(
         name="Test Event",
         description="Test event description",
-        location=ST_GeomFromText('POINT(10.123 20.456)'),  # Proper PostGIS point
+        location=ST_GeomFromText("POINT(10.123 20.456)"),  # Proper PostGIS point
         created_by=test_user.id,
         tag_id=test_tag.id,
-        vehicle_id=test_vehicle_type.id
+        vehicle_id=test_vehicle_type.id,
     )
     db.add(event)
     db.commit()
@@ -167,9 +170,9 @@ def test_issue(db: Session, test_user: User, test_tag: Tag) -> Issue:
         name="Test Issue",
         description="Test issue description",
         created_by_user_id=test_user.id,
-        tag_id=test_tag.id
+        tag_id=test_tag.id,
     )
     db.add(issue)
     db.commit()
     db.refresh(issue)
-    return issue 
+    return issue

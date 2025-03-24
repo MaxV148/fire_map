@@ -22,8 +22,11 @@ dependencies = [
     "fastapi==0.115.8",
     "uvicorn==0.34.0",
     "PyJWT==2.10.1",
+    "email_validator==2.2.0",
     "passlib==1.7.4",
-    "GeoAlchemy2==0.17.1"
+    "GeoAlchemy2==0.17.1",
+    "pyotp==2.9.0",
+    "qrcode[pil]==7.4.2"
 ]
 
 [project.optional-dependencies]
@@ -47,6 +50,7 @@ packages = [
     "src.domain.issue",
     "src.domain.tag",
     "src.domain.vehicletype",
+    "src.domain.invite",
     "src.infrastructure.postgresql",
     "src.conf"
 ]

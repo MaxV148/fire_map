@@ -1,43 +1,110 @@
 import authService from './authService';
 
+const API_BASE_URL = "http://localhost:8000/v1";
+
+// Types
+export interface TagCreate {
+  name: string;
+  color?: string;
+  description?: string;
+}
+
+export interface TagUpdate {
+  name?: string;
+  color?: string;
+  description?: string;
+}
+
 export interface Tag {
   id: number;
   name: string;
+  color: string;
+  description: string;
   created_at: string;
-  updated_at: string;
 }
 
-const API_URL = 'http://localhost:8000/v1/tag';
+// Setup auth headers
+const getAuthHeaders = (): HeadersInit => {
+  const token = authService.getToken();
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+};
 
 /**
- * Fetch all tags
- * @returns Promise with array of tags
+ * Generic function to handle API responses and errors
+ */
+const handleResponse = async (response: Response) => {
+  if (!response.ok) {
+    // Try to get error details from the response
+    let errorMessage;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || `Error: ${response.status}`;
+    } catch {
+      errorMessage = `Error: ${response.status} ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+  
+  // For 204 No Content responses
+  if (response.status === 204) {
+    return null;
+  }
+  
+  return response.json();
+};
+
+/**
+ * Create a new tag
+ */
+export const createTag = async (tagData: TagCreate): Promise<Tag> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tag`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(tagData)
+    });
+    
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error creating tag:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all tags
  */
 export const getAllTags = async (): Promise<Tag[]> => {
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(`${API_BASE_URL}/tag`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authService.getAuthHeader(),
-      },
+      headers: getAuthHeaders()
     });
-
-    if (response.status === 401) {
-      // Handle unauthorized (expired token)
-      authService.handleUnauthorized();
-      return [];
-    }
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch tags');
-    }
-
-    const data: Tag[] = await response.json();
-    return data;
+    
+    return handleResponse(response);
   } catch (error) {
     console.error('Error fetching tags:', error);
-    return [];
+    throw error;
+  }
+};
+
+/**
+ * Delete a tag
+ */
+export const deleteTag = async (tagId: number): Promise<void> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tag/${tagId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error deleting tag:', error);
+    throw error;
   }
 };
 
@@ -48,26 +115,12 @@ export const getAllTags = async (): Promise<Tag[]> => {
  */
 export const getTagById = async (tagId: number): Promise<Tag | null> => {
   try {
-    const response = await fetch(`${API_URL}/${tagId}`, {
+    const response = await fetch(`${API_BASE_URL}/tag/${tagId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authService.getAuthHeader(),
-      },
+      headers: getAuthHeaders()
     });
-
-    if (response.status === 401) {
-      // Handle unauthorized (expired token)
-      authService.handleUnauthorized();
-      return null;
-    }
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch tag ${tagId}`);
-    }
-
-    const data: Tag = await response.json();
-    return data;
+    
+    return handleResponse(response);
   } catch (error) {
     console.error(`Error fetching tag ${tagId}:`, error);
     return null;
@@ -77,4 +130,6 @@ export const getTagById = async (tagId: number): Promise<Tag | null> => {
 export default {
   getAllTags,
   getTagById,
+  createTag,
+  deleteTag,
 }; 

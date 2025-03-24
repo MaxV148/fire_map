@@ -36,6 +36,7 @@ import MyLocationIcon from '@mui/icons-material/MyLocation';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Fab from '@mui/material/Fab';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -52,6 +53,9 @@ import { getAllTags, Tag } from '../services/tagService';
 import { getAllVehicleTypes, VehicleType } from '../services/vehicleTypeService';
 import { eventsToLocations, getMapCenter } from '../utils/mapUtils';
 import EntityList from '../components/EntityList';
+import InfoIcon from '@mui/icons-material/Info';
+import AdminPage from './AdminPage';
+import ProfilePage from './ProfilePage';
 
 interface DashboardPageProps {
   onLogout: () => void;
@@ -62,6 +66,9 @@ type TabOption = 'events' | 'issues';
 
 // Type for time filter options
 type TimeFilterOption = 'today' | 'week' | 'month' | null;
+
+// Page type to handle navigation
+type PageType = 'dashboard' | 'admin' | 'profile';
 
 const DashboardPage = ({ onLogout }: DashboardPageProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -104,6 +111,12 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
   const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilterOption>(null);
+
+  // New state for clicked map location
+  const [clickedMapLocation, setClickedMapLocation] = useState<[number, number] | null>(null);
+  
+  // New state for current page
+  const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
 
   useEffect(() => {
     // Get user profile from auth service
@@ -338,6 +351,12 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
   const handleTabChange = (event: React.SyntheticEvent, newValue: TabOption) => {
     setActiveTab(newValue);
   };
+  
+  // New function to handle page navigation
+  const handlePageChange = (page: PageType) => {
+    setCurrentPage(page);
+    setDrawerOpen(false); // Close drawer after navigation
+  };
 
   // Handle entity click to focus on the map
   const handleEntityClick = (entity: Event | Issue) => {
@@ -392,6 +411,15 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
     }
   };
 
+  // Handle map click event
+  const handleMapClick = (position: [number, number]) => {
+    // Store the clicked position
+    setClickedMapLocation(position);
+    
+    // Open the create event modal
+    setCreateEventModalOpen(true);
+  };
+
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     
@@ -412,10 +440,14 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
   };
 
   const handleOpenCreateEventModal = () => {
+    // Reset the clicked map location when opening modal via button
+    setClickedMapLocation(null);
     setCreateEventModalOpen(true);
   };
 
   const handleCloseCreateEventModal = () => {
+    // Clear clicked location when closing modal
+    setClickedMapLocation(null);
     setCreateEventModalOpen(false);
   };
 
@@ -425,6 +457,8 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
     if (userProfile?.id) {
       fetchUserEvents(userProfile.id);
     }
+    // Clear clicked location
+    setClickedMapLocation(null);
   };
 
   const handleGetUserLocation = () => {
@@ -479,6 +513,12 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
 
   const handleCloseLocationError = () => {
     setShowLocationError(false);
+  };
+
+  // Function to determine if user is admin (simplified for now)
+  const isUserAdmin = () => {
+    // In a real app, this would check user roles or permissions
+    return true;
   };
 
   return (
@@ -541,7 +581,10 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
               </Typography>
             </ListItem>
             <ListItem disablePadding>
-              <ListItemButton selected>
+              <ListItemButton 
+                selected={currentPage === 'dashboard'}
+                onClick={() => handlePageChange('dashboard')}
+              >
                 <ListItemIcon>
                   <HomeIcon />
                 </ListItemIcon>
@@ -556,47 +599,31 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
                 <ListItemText primary="Incidents" />
               </ListItemButton>
             </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  <EventIcon />
-                </ListItemIcon>
-                <ListItemText primary="Events" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  <FactCheckIcon />
-                </ListItemIcon>
-                <ListItemText primary="Inspections" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  <SchoolIcon />
-                </ListItemIcon>
-                <ListItemText primary="Training" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemIcon>
-                  <DirectionsBusIcon />
-                </ListItemIcon>
-                <ListItemText primary="Apparatus" />
-              </ListItemButton>
-            </ListItem>
+            {isUserAdmin() && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  selected={currentPage === 'admin'}
+                  onClick={() => handlePageChange('admin')}
+                >
+                  <ListItemIcon>
+                    <AdminPanelSettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Admin" />
+                </ListItemButton>
+              </ListItem>
+            )}
           </List>
           <Divider />
           <List sx={{ mt: 'auto' }}>
             <ListItem disablePadding>
-              <ListItemButton>
+              <ListItemButton
+                selected={currentPage === 'profile'}
+                onClick={() => handlePageChange('profile')}
+              >
                 <ListItemIcon>
                   <AccountCircleIcon />
                 </ListItemIcon>
-                <ListItemText primary="Profile" />
+                <ListItemText primary="Profil" />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
@@ -631,332 +658,340 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
           mt: '64px' // Height of AppBar
         }}
       >
-        <Typography variant="h4" component="h1" sx={{ mb: 3, fontWeight: 'bold' }}>
-          Dashboard
-        </Typography>
-        
-        {/* Map section */}
-        <Box sx={{ position: 'relative', mb: 3, height: 500, borderRadius: 2, overflow: 'hidden' }}>
-          {isLoadingEvents ? (
-            <Box sx={{ 
-              position: 'absolute', 
-              top: '50%', 
-              left: '50%', 
-              transform: 'translate(-50%, -50%)'
-            }}>
-              <CircularProgress />
-              <Typography sx={{ mt: 2 }}>Loading events...</Typography>
-            </Box>
-          ) : (
-            <LocationMap 
-              ref={mapRef}
-              userLocation={userCoordinates}
-              locations={userEvents}
-              center={mapCenter}
-              zoom={11}
-              height="100%"
-              width="100%"
-            />
-          )}
-          
-          {/* Floating Action Button */}
-          <Fab
-            color="error"
-            aria-label="add"
-            onClick={handleOpenCreateEventModal}
-            sx={{
-              position: 'absolute',
-              left: 20,
-              bottom: 20,
-              zIndex: 1000
-            }}
-          >
-            <AddIcon />
-          </Fab>
-          
-          {/* Map controls */}
-          <Box sx={{ 
-            position: 'absolute', 
-            right: 16, 
-            top: '50%', 
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
-            bgcolor: 'white',
-            borderRadius: 2,
-            p: 0.5,
-            boxShadow: '0px 2px 6px rgba(0,0,0,0.1)',
-            zIndex: 1000
-          }}>
-            <IconButton 
-              size="small"
-              onClick={() => mapRef.current?.zoomIn()}
-              aria-label="zoom in"
-            >
-              <ZoomInIcon />
-            </IconButton>
-            <Divider sx={{ my: 0.5 }} />
-            <IconButton 
-              size="small"
-              onClick={() => mapRef.current?.zoomOut()}
-              aria-label="zoom out"
-            >
-              <ZoomOutIcon />
-            </IconButton>
-          </Box>
-
-          {/* Location control */}
-          <Box sx={{
-            position: 'absolute', 
-            right: 16, 
-            bottom: 16,
-            bgcolor: 'white',
-            borderRadius: 2,
-            p: 0.5,
-            boxShadow: '0px 2px 6px rgba(0,0,0,0.1)',
-            zIndex: 1000
-          }}>
-            <IconButton 
-              size="small" 
-              onClick={handleGetUserLocation}
-              disabled={isLoadingLocation}
-            >
-              {isLoadingLocation ? (
-                <CircularProgress size={24} />
-              ) : (
-                <MyLocationIcon />
-              )}
-            </IconButton>
-          </Box>
-          
-          {/* Search Bar overlay */}
-          <Box sx={{ 
-            position: 'absolute', 
-            top: 16, 
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '90%',
-            maxWidth: 400,
-            zIndex: 1000
-          }}>
-            <SearchBar 
-              onSearch={handleSearch} 
-              placeholder="Search location..."
-            />
+        {currentPage === 'dashboard' ? (
+          <>
+            <Typography variant="h4" component="h1" sx={{ mb: 3, fontWeight: 'bold' }}>
+              Dashboard
+            </Typography>
             
-            {/* Search Results Dropdown */}
-            {searchQuery && searchResults.length > 0 && (
-              <Paper 
-                sx={{ 
-                  mt: 1, 
-                  maxHeight: 300, 
-                  overflow: 'auto',
-                  width: '100%',
-                  borderRadius: 2,
-                  boxShadow: '0px 4px 10px rgba(0,0,0,0.1)'
+            {/* Map section */}
+            <Box sx={{ position: 'relative', mb: 3, height: 500, borderRadius: 2, overflow: 'hidden' }}>
+              {isLoadingEvents ? (
+                <Box sx={{ 
+                  position: 'absolute', 
+                  top: '50%', 
+                  left: '50%', 
+                  transform: 'translate(-50%, -50%)'
+                }}>
+                  <CircularProgress />
+                  <Typography sx={{ mt: 2 }}>Loading events...</Typography>
+                </Box>
+              ) : (
+                <LocationMap 
+                  ref={mapRef}
+                  userLocation={userCoordinates}
+                  locations={userEvents}
+                  center={mapCenter}
+                  zoom={11}
+                  height="100%"
+                  width="100%"
+                  onMapClick={handleMapClick}
+                />
+              )}
+              
+              {/* Floating Action Button */}
+              <Fab
+                color="error"
+                aria-label="add"
+                onClick={handleOpenCreateEventModal}
+                sx={{
+                  position: 'absolute',
+                  left: 20,
+                  bottom: 20,
+                  zIndex: 1000
                 }}
               >
-                <List dense>
-                  {searchResults.map((result) => (
-                    <ListItem 
-                      key={result.id}
-                      onClick={() => {
-                        if (mapRef.current && result.coordinates) {
-                          mapRef.current.flyTo(result.coordinates, 15);
-                        }
-                        setSearchResults([]); // Clear results after selection
-                      }}
-                      sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' } }}
-                    >
-                      <ListItemText 
-                        primary={result.name}
-                        secondary={result.address}
-                        primaryTypographyProps={{ fontWeight: 'medium' }}
-                        secondaryTypographyProps={{ fontSize: '0.8rem' }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Paper>
-            )}
-          </Box>
-        </Box>
-        
-        {/* Filters */}
-        <Paper 
-          elevation={1}
-          sx={{ 
-            p: 2, 
-            mb: 3, 
-            borderRadius: 2,
-            bgcolor: 'white' 
-          }}
-        >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-            <Typography variant="h6" sx={{ fontSize: '1.1rem' }}>Filters</Typography>
+                <AddIcon />
+              </Fab>
+              
+              {/* Map controls */}
+              <Box sx={{ 
+                position: 'absolute', 
+                right: 16, 
+                top: '50%', 
+                transform: 'translateY(-50%)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1,
+                bgcolor: 'white',
+                borderRadius: 2,
+                p: 0.5,
+                boxShadow: '0px 2px 6px rgba(0,0,0,0.1)',
+                zIndex: 1000
+              }}>
+                <IconButton 
+                  size="small"
+                  onClick={() => mapRef.current?.zoomIn()}
+                  aria-label="zoom in"
+                >
+                  <ZoomInIcon />
+                </IconButton>
+                <Divider sx={{ my: 0.5 }} />
+                <IconButton 
+                  size="small"
+                  onClick={() => mapRef.current?.zoomOut()}
+                  aria-label="zoom out"
+                >
+                  <ZoomOutIcon />
+                </IconButton>
+              </Box>
+
+              {/* Location control */}
+              <Box sx={{
+                position: 'absolute', 
+                right: 16, 
+                bottom: 16,
+                bgcolor: 'white',
+                borderRadius: 2,
+                p: 0.5,
+                boxShadow: '0px 2px 6px rgba(0,0,0,0.1)',
+                zIndex: 1000
+              }}>
+                <IconButton 
+                  size="small" 
+                  onClick={handleGetUserLocation}
+                  disabled={isLoadingLocation}
+                >
+                  {isLoadingLocation ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    <MyLocationIcon />
+                  )}
+                </IconButton>
+              </Box>
+              
+              {/* Search Bar overlay */}
+              <Box sx={{ 
+                position: 'absolute', 
+                top: 16, 
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '90%',
+                maxWidth: 400,
+                zIndex: 1000
+              }}>
+                <SearchBar 
+                  onSearch={handleSearch} 
+                  placeholder="Search location..."
+                />
+                
+                {/* Search Results Dropdown */}
+                {searchQuery && searchResults.length > 0 && (
+                  <Paper 
+                    sx={{ 
+                      mt: 1, 
+                      maxHeight: 300, 
+                      overflow: 'auto',
+                      width: '100%',
+                      borderRadius: 2,
+                      boxShadow: '0px 4px 10px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    <List dense>
+                      {searchResults.map((result) => (
+                        <ListItem 
+                          key={result.id}
+                          onClick={() => {
+                            if (mapRef.current && result.coordinates) {
+                              mapRef.current.flyTo(result.coordinates, 15);
+                            }
+                            setSearchResults([]); // Clear results after selection
+                          }}
+                          sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' } }}
+                        >
+                          <ListItemText 
+                            primary={result.name}
+                            secondary={result.address}
+                            primaryTypographyProps={{ fontWeight: 'medium' }}
+                            secondaryTypographyProps={{ fontSize: '0.8rem' }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Paper>
+                )}
+              </Box>
+            </Box>
             
-            {/* Clear filters button */}
-            {(selectedTagId !== null || selectedVehicleId !== null || selectedTimeFilter !== null) && (
-              <Button 
-                variant="outlined" 
-                size="small" 
-                onClick={clearFilters}
-                color="secondary"
+            {/* Filters */}
+            <Paper 
+              elevation={1}
+              sx={{ 
+                p: 2, 
+                mb: 3, 
+                borderRadius: 2,
+                bgcolor: 'white' 
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Typography variant="h6" sx={{ fontSize: '1.1rem' }}>Filters</Typography>
+                
+                {/* Clear filters button */}
+                {(selectedTagId !== null || selectedVehicleId !== null || selectedTimeFilter !== null) && (
+                  <Button 
+                    variant="outlined" 
+                    size="small" 
+                    onClick={clearFilters}
+                    color="secondary"
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </Box>
+              
+              <Grid container spacing={2}>
+                {/* Event Tags */}
+                <Grid item xs={12} md={4}>
+                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>Event Tags</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {isLoadingTags ? (
+                      <CircularProgress size={20} />
+                    ) : tags.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">No tags available</Typography>
+                    ) : (
+                      tags.map((tag) => (
+                        <Chip 
+                          key={tag.id}
+                          label={tag.name}
+                          color={selectedTagId === tag.id ? "primary" : "default"}
+                          variant={selectedTagId === tag.id ? "filled" : "outlined"}
+                          onClick={() => handleTagFilterClick(tag.id)}
+                          size="small"
+                          sx={{ borderRadius: 1, m: 0.5 }}
+                        />
+                      ))
+                    )}
+                  </Box>
+                </Grid>
+                
+                {/* Vehicle Types - only show for events tab */}
+                <Grid item xs={12} md={4}>
+                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>Vehicle Types</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {isLoadingVehicleTypes ? (
+                      <CircularProgress size={20} />
+                    ) : vehicleTypes.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">No vehicle types available</Typography>
+                    ) : (
+                      vehicleTypes.map((vehicle) => (
+                        <Chip 
+                          key={vehicle.id}
+                          label={vehicle.name}
+                          color={selectedVehicleId === vehicle.id ? "secondary" : "default"}
+                          variant={selectedVehicleId === vehicle.id ? "filled" : "outlined"}
+                          onClick={() => handleVehicleFilterClick(vehicle.id)}
+                          size="small"
+                          sx={{ borderRadius: 1, m: 0.5 }}
+                          disabled={activeTab !== 'events'} // Only enable for events tab
+                        />
+                      ))
+                    )}
+                  </Box>
+                </Grid>
+                
+                {/* Time Period */}
+                <Grid item xs={12} md={4}>
+                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>Time Period</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    <Chip 
+                      label="Today"
+                      color={selectedTimeFilter === 'today' ? "error" : "default"}
+                      variant={selectedTimeFilter === 'today' ? "filled" : "outlined"}
+                      onClick={() => handleTimeFilterClick('today')}
+                      size="small"
+                      sx={{ borderRadius: 1, m: 0.5 }}
+                    />
+                    <Chip 
+                      label="This Week"
+                      color={selectedTimeFilter === 'week' ? "error" : "default"}
+                      variant={selectedTimeFilter === 'week' ? "filled" : "outlined"}
+                      onClick={() => handleTimeFilterClick('week')}
+                      size="small"
+                      sx={{ borderRadius: 1, m: 0.5 }}
+                    />
+                    <Chip 
+                      label="This Month"
+                      color={selectedTimeFilter === 'month' ? "error" : "default"}
+                      variant={selectedTimeFilter === 'month' ? "filled" : "outlined"}
+                      onClick={() => handleTimeFilterClick('month')}
+                      size="small"
+                      sx={{ borderRadius: 1, m: 0.5 }}
+                    />
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+            
+            {/* Tabs for Events/Issues */}
+            <Box sx={{ mb: 3 }}>
+              <Tabs 
+                value={activeTab} 
+                onChange={handleTabChange}
+                indicatorColor="primary"
+                textColor="primary"
+                variant="fullWidth"
               >
-                Clear Filters
-              </Button>
+                <Tab 
+                  label="Events"
+                  value="events"
+                  icon={<EventIcon />} 
+                  iconPosition="start"
+                />
+                <Tab 
+                  label="Issues" 
+                  value="issues" 
+                  icon={<FactCheckIcon />} 
+                  iconPosition="start"
+                />
+              </Tabs>
+            </Box>
+            
+            {/* Entity Lists */}
+            {activeTab === 'events' && (
+              <EntityList
+                entityType="event"
+                entities={filteredEvents.length > 0 ? filteredEvents : rawEvents}
+                isLoading={isLoadingEvents}
+                error={eventsError}
+                onEntityClick={(entity) => {
+                  // Type guard to ensure we only call this for Event types with location
+                  if ('location' in entity && entity.location) {
+                    handleEntityClick(entity as Event);
+                  }
+                }}
+                onEntityEdit={(entity) => handleEditEntity(entity as Event)}
+                onEntityDeleted={() => handleEntityDeleted('event')}
+                emptyMessage={
+                  selectedTagId || selectedVehicleId || selectedTimeFilter
+                    ? "No events match the selected filters."
+                    : "You haven't created any events yet."
+                }
+              />
             )}
-          </Box>
-          
-          <Grid container spacing={2}>
-            {/* Event Tags */}
-            <Grid item xs={12} md={4}>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>Event Tags</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {isLoadingTags ? (
-                  <CircularProgress size={20} />
-                ) : tags.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">No tags available</Typography>
-                ) : (
-                  tags.map((tag) => (
-                    <Chip 
-                      key={tag.id}
-                      label={tag.name}
-                      color={selectedTagId === tag.id ? "primary" : "default"}
-                      variant={selectedTagId === tag.id ? "filled" : "outlined"}
-                      onClick={() => handleTagFilterClick(tag.id)}
-                      size="small"
-                      sx={{ borderRadius: 1, m: 0.5 }}
-                    />
-                  ))
-                )}
-              </Box>
-            </Grid>
             
-            {/* Vehicle Types - only show for events tab */}
-            <Grid item xs={12} md={4}>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>Vehicle Types</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {isLoadingVehicleTypes ? (
-                  <CircularProgress size={20} />
-                ) : vehicleTypes.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">No vehicle types available</Typography>
-                ) : (
-                  vehicleTypes.map((vehicle) => (
-                    <Chip 
-                      key={vehicle.id}
-                      label={vehicle.name}
-                      color={selectedVehicleId === vehicle.id ? "secondary" : "default"}
-                      variant={selectedVehicleId === vehicle.id ? "filled" : "outlined"}
-                      onClick={() => handleVehicleFilterClick(vehicle.id)}
-                      size="small"
-                      sx={{ borderRadius: 1, m: 0.5 }}
-                      disabled={activeTab !== 'events'} // Only enable for events tab
-                    />
-                  ))
-                )}
-              </Box>
-            </Grid>
-            
-            {/* Time Period */}
-            <Grid item xs={12} md={4}>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>Time Period</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                <Chip 
-                  label="Today"
-                  color={selectedTimeFilter === 'today' ? "error" : "default"}
-                  variant={selectedTimeFilter === 'today' ? "filled" : "outlined"}
-                  onClick={() => handleTimeFilterClick('today')}
-                  size="small"
-                  sx={{ borderRadius: 1, m: 0.5 }}
-                />
-                <Chip 
-                  label="This Week"
-                  color={selectedTimeFilter === 'week' ? "error" : "default"}
-                  variant={selectedTimeFilter === 'week' ? "filled" : "outlined"}
-                  onClick={() => handleTimeFilterClick('week')}
-                  size="small"
-                  sx={{ borderRadius: 1, m: 0.5 }}
-                />
-                <Chip 
-                  label="This Month"
-                  color={selectedTimeFilter === 'month' ? "error" : "default"}
-                  variant={selectedTimeFilter === 'month' ? "filled" : "outlined"}
-                  onClick={() => handleTimeFilterClick('month')}
-                  size="small"
-                  sx={{ borderRadius: 1, m: 0.5 }}
-                />
-              </Box>
-            </Grid>
-          </Grid>
-        </Paper>
-        
-        {/* Tabs for Events/Issues */}
-        <Box sx={{ mb: 3 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange}
-            indicatorColor="primary"
-            textColor="primary"
-            variant="fullWidth"
-          >
-            <Tab 
-              label="Events" 
-              value="events" 
-              icon={<EventIcon />} 
-              iconPosition="start"
-            />
-            <Tab 
-              label="Issues" 
-              value="issues" 
-              icon={<FactCheckIcon />} 
-              iconPosition="start"
-            />
-          </Tabs>
-        </Box>
-        
-        {/* Entity Lists */}
-        {activeTab === 'events' && (
-          <EntityList
-            entityType="event"
-            entities={filteredEvents.length > 0 ? filteredEvents : rawEvents}
-            isLoading={isLoadingEvents}
-            error={eventsError}
-            title={`My Events${filteredEvents.length > 0 && filteredEvents.length !== rawEvents.length ? ` (Filtered: ${filteredEvents.length})` : ''}`}
-            onEntityClick={(entity) => {
-              // Type guard to ensure we only call this for Event types with location
-              if ('location' in entity && entity.location) {
-                handleEntityClick(entity as Event);
-              }
-            }}
-            onEntityEdit={(entity) => handleEditEntity(entity as Event)}
-            onEntityDeleted={() => handleEntityDeleted('event')}
-            emptyMessage={
-              selectedTagId || selectedVehicleId || selectedTimeFilter
-                ? "No events match the selected filters."
-                : "You haven't created any events yet."
-            }
-          />
-        )}
-        
-        {activeTab === 'issues' && (
-          <EntityList
-            entityType="issue"
-            entities={filteredIssues.length > 0 ? filteredIssues : issues}
-            isLoading={isLoadingIssues}
-            error={issuesError}
-            title={`My Issues${filteredIssues.length > 0 && filteredIssues.length !== issues.length ? ` (Filtered: ${filteredIssues.length})` : ''}`}
-            onEntityClick={(entity) => handleEntityClick(entity as Issue)}
-            onEntityEdit={(entity) => handleEditEntity(entity as Issue)}
-            onEntityDeleted={() => handleEntityDeleted('issue')}
-            emptyMessage={
-              selectedTagId || selectedTimeFilter
-                ? "No issues match the selected filters."
-                : "You haven't created any issues yet."
-            }
-          />
-        )}
+            {activeTab === 'issues' && (
+              <EntityList
+                entityType="issue"
+                entities={filteredIssues.length > 0 ? filteredIssues : issues}
+                isLoading={isLoadingIssues}
+                error={issuesError}
+                title={`My Issues${filteredIssues.length > 0 && filteredIssues.length !== issues.length ? ` (Filtered: ${filteredIssues.length})` : ''}`}
+                onEntityClick={(entity) => handleEntityClick(entity as Issue)}
+                onEntityEdit={(entity) => handleEditEntity(entity as Issue)}
+                onEntityDeleted={() => handleEntityDeleted('issue')}
+                emptyMessage={
+                  selectedTagId || selectedTimeFilter
+                    ? "No issues match the selected filters."
+                    : "You haven't created any issues yet."
+                }
+              />
+            )}
+          </>
+        ) : currentPage === 'admin' ? (
+          <AdminPage />
+        ) : currentPage === 'profile' ? (
+          <ProfilePage />
+        ) : null}
       </Box>
 
       {/* Create Event Modal */}
@@ -964,6 +999,7 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
         open={createEventModalOpen}
         onClose={handleCloseCreateEventModal}
         onSuccess={handleEventCreated}
+        initialLocation={clickedMapLocation}
       />
 
       {/* Update Entity Modal */}

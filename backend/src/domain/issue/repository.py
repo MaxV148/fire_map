@@ -11,7 +11,9 @@ class IssueRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, issue_data: IssueCreate, current_user: Optional[User] = None) -> Issue:
+    def create(
+        self, issue_data: IssueCreate, current_user: Optional[User] = None
+    ) -> Issue:
         """Create a new issue"""
         db_issue = Issue(
             name=issue_data.name,
@@ -70,7 +72,7 @@ class IssueRepository:
             stmt = update(Issue).where(Issue.id == issue_id).values(**update_data)
             self.db.execute(stmt)
             self.db.commit()
-            
+
             # Refresh the issue object
             return self.get_by_id(issue_id)
         return db_issue
@@ -86,4 +88,4 @@ class IssueRepository:
         stmt = delete(Issue).where(Issue.id == issue_id)
         self.db.execute(stmt)
         self.db.commit()
-        return True 
+        return True

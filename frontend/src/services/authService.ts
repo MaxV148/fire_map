@@ -12,6 +12,14 @@ interface AuthResponse {
   access_token: string;
   id: number;
   username: string;
+  token_type: string;
+  requires_2fa?: boolean;
+  temp_token?: string;
+}
+
+export interface OTPVerification {
+  temp_token: string;
+  code: string;
 }
 
 const TOKEN_KEY = 'token';
@@ -215,7 +223,71 @@ export const authService = {
     if (authService.isAuthenticated()) {
       authService.resetIdleTimer();
     }
-  }
+  },
+
+  /**
+   * Check if 2FA is enabled for the current user
+   * @returns Promise<boolean> True if 2FA is enabled
+   */
+  check2FAStatus: async (): Promise<boolean> => {
+    try {
+      const response = await fetch('http://localhost:8000/v1/user/me', {
+        headers: authService.getAuthHeader()
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user details');
+      }
+
+      const data = await response.json();
+      return data.otp_configured || false;
+    } catch (error) {
+      console.error('Error checking 2FA status:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Verify OTP code for 2FA login
+   * @param verification - The OTP verification data
+   * @returns Promise with the authentication response
+   */
+  verifyOTP: async (verification: OTPVerification): Promise<AuthResponse> => {
+    try {
+      const response = await fetch('http://localhost:8000/v1/user/login/2fa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(verification),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'OTP-Verifizierung fehlgeschlagen');
+      }
+
+      const data: AuthResponse = await response.json();
+      
+      // Speichere Token und Benutzerprofil
+      localStorage.setItem(TOKEN_KEY, data.access_token);
+      
+      if (data.username) {
+        const profile: UserProfile = {
+          username: data.username,
+          id: data.id
+        }
+        localStorage.setItem(USER_KEY, JSON.stringify(profile));
+      }
+      
+      // Starte Idle-Timer
+      authService.startIdleTimer();
+      
+      return data;
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
 };
 
 export default authService; 

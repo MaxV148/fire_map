@@ -1,5 +1,5 @@
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-import { LatLngExpression, Map as LeafletMap } from "leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { LatLngExpression, Map as LeafletMap, LatLng } from "leaflet";
 import { useMemo, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 
 export interface Location {
@@ -16,6 +16,7 @@ interface LocationMapProps {
   height?: string;
   width?: string;
   userLocation?: LatLngExpression | null;
+  onMapClick?: (position: [number, number]) => void;
 }
 
 export interface LocationMapRef {
@@ -23,6 +24,21 @@ export interface LocationMapRef {
   panTo: (position: LatLngExpression) => void;
   zoomIn: () => void;
   zoomOut: () => void;
+}
+
+// Component to handle map events including clicks
+function MapEventHandler({ onMapClick }: { onMapClick?: (position: [number, number]) => void }) {
+  const map = useMapEvents({
+    click: (e) => {
+      if (onMapClick) {
+        // Convert LatLng to [lat, lng] array format
+        const { lat, lng } = e.latlng;
+        onMapClick([lat, lng]);
+      }
+    },
+  });
+  
+  return null;
 }
 
 // Component to control the map and respond to user location changes
@@ -44,7 +60,8 @@ const LocationMap = forwardRef<LocationMapRef, LocationMapProps>(({
   zoom = 2,
   height = "100vh",
   width = "100%",
-  userLocation
+  userLocation,
+  onMapClick
 }, ref) => {
   const mapRef = useRef<LeafletMap | null>(null);
   
@@ -90,7 +107,11 @@ const LocationMap = forwardRef<LocationMapRef, LocationMapProps>(({
     <MapContainer
       center={center}
       zoom={zoom}
-      style={{ height, width }}
+      style={{ 
+        height, 
+        width,
+        cursor: onMapClick ? 'pointer' : 'grab'
+      }}
       scrollWheelZoom={true}
       zoomControl={false}
       ref={(mapInstance: LeafletMap | null) => {
@@ -103,6 +124,7 @@ const LocationMap = forwardRef<LocationMapRef, LocationMapProps>(({
       />
       {locationMarkers}
       <MapController userLocation={userLocation} />
+      <MapEventHandler onMapClick={onMapClick} />
     </MapContainer>
   );
 });

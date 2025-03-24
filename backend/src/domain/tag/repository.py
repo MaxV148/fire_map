@@ -56,7 +56,7 @@ class TagRepository:
             stmt = update(Tag).where(Tag.id == tag_id).values(**update_data)
             self.db.execute(stmt)
             self.db.commit()
-            
+
             # Refresh the tag object
             return self.get_by_id(tag_id)
         return db_tag
@@ -72,4 +72,4 @@ class TagRepository:
         stmt = delete(Tag).where(Tag.id == tag_id)
         self.db.execute(stmt)
         self.db.commit()
-        return True 
+        return True

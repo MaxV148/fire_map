@@ -1,26 +1,24 @@
 import authService from './authService';
 
 const API_BASE_URL = "http://localhost:8000/v1";
-
 // Types
-export interface VehicleTypeCreate {
-  name: string;
-  description?: string;
-  capacity?: number;
+export interface InviteCreate {
+  email: string;
+  expire_days?: number;
 }
 
-export interface VehicleTypeUpdate {
-  name?: string;
-  description?: string;
-  capacity?: number;
-}
-
-export interface VehicleType {
+export interface Invite {
   id: number;
-  name: string;
-  description: string;
-  capacity: number;
+  invite_uuid: string;
+  email: string;
+  expire_date: string;
   created_at: string;
+  is_used: boolean;
+}
+
+export interface InviteList {
+  invites: Invite[];
+  count: number;
 }
 
 // Setup auth headers
@@ -57,58 +55,55 @@ const handleResponse = async (response: Response) => {
 };
 
 /**
- * Create a new vehicle type
+ * Create a new invitation for a user
  */
-export const createVehicleType = async (vehicleData: VehicleTypeCreate): Promise<VehicleType> => {
+export const createInvite = async (inviteData: InviteCreate): Promise<Invite> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/vehicle`, {
+    const response = await fetch(`${API_BASE_URL}/invite`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(vehicleData)
+      body: JSON.stringify(inviteData)
     });
     
     return handleResponse(response);
   } catch (error) {
-    console.error('Error creating vehicle type:', error);
+    console.error('Error creating invite:', error);
     throw error;
   }
 };
 
 /**
- * Get all vehicle types
+ * Get all invitations
  */
-export const getAllVehicleTypes = async (): Promise<VehicleType[]> => {
+export const getAllInvites = async (skip = 0, limit = 100): Promise<InviteList> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/vehicle`, {
-      method: 'GET',
-      headers: getAuthHeaders()
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/invite?skip=${skip}&limit=${limit}`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      }
+    );
     
     return handleResponse(response);
   } catch (error) {
-    console.error('Error fetching vehicle types:', error);
+    console.error('Error fetching invites:', error);
     throw error;
   }
 };
 
 /**
- * Delete a vehicle type
+ * Delete an invitation
  */
-export const deleteVehicleType = async (vehicleId: number): Promise<void> => {
+export const deleteInvite = async (inviteUuid: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/vehicle/${vehicleId}`, {
+    const response = await fetch(`${API_BASE_URL}/invite/${inviteUuid}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
     
     return handleResponse(response);
   } catch (error) {
-    console.error('Error deleting vehicle type:', error);
+    console.error('Error deleting invite:', error);
     throw error;
   }
-};
-
-export default {
-  getAllVehicleTypes,
-  deleteVehicleType,
 }; 
