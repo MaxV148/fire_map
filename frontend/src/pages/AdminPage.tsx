@@ -22,25 +22,16 @@ import {
   Tab,
   Grid,
   Chip,
-  InputAdornment,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow
+  InputAdornment
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LabelIcon from '@mui/icons-material/Label';
 import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import GroupIcon from '@mui/icons-material/Group';
-import SecurityIcon from '@mui/icons-material/Security';
 import { createInvite, getAllInvites, deleteInvite, Invite } from '../services/inviteService';
 import { createTag, getAllTags, deleteTag, Tag, TagCreate } from '../services/tagService';
 import { createVehicleType, getAllVehicleTypes, deleteVehicleType, VehicleType, VehicleTypeCreate } from '../services/vehicleTypeService';
-import { getAllUsers, User } from '../services/userService';
 import { formatDistanceToNow } from 'date-fns';
 
 interface TabPanelProps {
@@ -112,16 +103,11 @@ const AdminPage = () => {
     severity: 'success' as 'success' | 'error' | 'info' | 'warning'
   });
 
-  // Add new state for users
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-
   // Load data on component mount
   useEffect(() => {
     fetchInvites();
     fetchTags();
     fetchVehicleTypes();
-    fetchUsers();
   }, []);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -164,19 +150,6 @@ const AdminPage = () => {
       showSnackbar('Failed to load vehicle types', 'error');
     } finally {
       setIsLoadingVehicleTypes(false);
-    }
-  };
-
-  const fetchUsers = async () => {
-    setIsLoadingUsers(true);
-    try {
-      const fetchedUsers = await getAllUsers();
-      setUsers(fetchedUsers);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-      showSnackbar('Fehler beim Laden der Benutzer', 'error');
-    } finally {
-      setIsLoadingUsers(false);
     }
   };
 
@@ -428,7 +401,7 @@ const AdminPage = () => {
             <Tab 
               icon={<PersonAddIcon />} 
               iconPosition="start" 
-              label="Einladungen" 
+              label="User Invitations" 
               id="admin-tab-0" 
               aria-controls="admin-tabpanel-0" 
             />
@@ -442,16 +415,9 @@ const AdminPage = () => {
             <Tab 
               icon={<DirectionsBusIcon />} 
               iconPosition="start" 
-              label="Fahrzeugtypen" 
+              label="Vehicle Types" 
               id="admin-tab-2" 
               aria-controls="admin-tabpanel-2" 
-            />
-            <Tab 
-              icon={<GroupIcon />} 
-              iconPosition="start" 
-              label="Benutzer" 
-              id="admin-tab-3" 
-              aria-controls="admin-tabpanel-3" 
             />
           </Tabs>
         </Box>
@@ -720,63 +686,6 @@ const AdminPage = () => {
                   </Box>
                 ))}
               </List>
-            )}
-          </Paper>
-        </TabPanel>
-        
-        {/* Users Tab */}
-        <TabPanel value={activeTab} index={3}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Benutzerverwaltung
-            </Typography>
-            
-            {isLoadingUsers ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-              </Box>
-            ) : users.length === 0 ? (
-              <Typography variant="body1" color="text.secondary" sx={{ p: 2 }}>
-                Keine Benutzer gefunden
-              </Typography>
-            ) : (
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Benutzername</TableCell>
-                      <TableCell>Rolle</TableCell>
-                      <TableCell>2FA Status</TableCell>
-                      <TableCell>Erstellt am</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.username}</TableCell>
-                        <TableCell>
-                          <Chip
-                            icon={user.role?.name === 'admin' ? <SecurityIcon /> : undefined}
-                            label={user.role?.name || 'User'}
-                            color={user.role?.name === 'admin' ? 'error' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={user.otp_configured ? '2FA Aktiviert' : '2FA Deaktiviert'}
-                            color={user.otp_configured ? 'success' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
             )}
           </Paper>
         </TabPanel>
