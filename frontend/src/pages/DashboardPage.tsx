@@ -19,7 +19,8 @@ import {
   Tabs,
   CircularProgress,
   Tooltip,
-  Button
+  Button,
+  TextField
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -42,11 +43,9 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import authService from '../services/authService';
 import LocationMap, { LocationMapRef, Location } from '../components/LocationMap';
-import SearchBar from '../components/SearchBar';
 import CreateEventModal from '../components/modals/CreateEventModal';
 import UpdateEntityModal from '../components/modals/UpdateEntityModal';
 import {UserProfile} from "../services/authService";
-import { searchLocations, SearchResult } from '../services/searchService';
 import { getEventsByUser, getEventsByTag, getEventsByVehicle, filterEventsByTime, Event } from '../services/eventService';
 import { getIssuesByUser, getIssuesByTag, filterIssuesByTime, Issue } from '../services/issueService';
 import { getAllTags, Tag } from '../services/tagService';
@@ -73,9 +72,6 @@ type PageType = 'dashboard' | 'admin' | 'profile';
 const DashboardPage = ({ onLogout }: DashboardPageProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [createEventModalOpen, setCreateEventModalOpen] = useState(false);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<Event | Issue | null>(null);
@@ -110,7 +106,6 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
   const [isLoadingVehicleTypes, setIsLoadingVehicleTypes] = useState(false);
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
-  const [selectedTimeFilter, setSelectedTimeFilter] = useState<TimeFilterOption>(null);
 
   // New state for clicked map location
   const [clickedMapLocation, setClickedMapLocation] = useState<[number, number] | null>(null);
@@ -148,12 +143,12 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
   // Update filtered events when raw events or filters change
   useEffect(() => {
     applyEventFilters();
-  }, [rawEvents, selectedTagId, selectedVehicleId, selectedTimeFilter]);
+  }, [rawEvents, selectedTagId, selectedVehicleId]);
   
   // Update filtered issues when issues or filters change
   useEffect(() => {
     applyIssueFilters();
-  }, [issues, selectedTagId, selectedTimeFilter]);
+  }, [issues, selectedTagId]);
 
   // Update map center when user events change
   useEffect(() => {
@@ -260,11 +255,6 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
       }
     }
     
-    // Apply time filter (client-side)
-    if (selectedTimeFilter) {
-      filteredResults = filterEventsByTime(filteredResults, selectedTimeFilter);
-    }
-    
     setFilteredEvents(filteredResults);
   };
   
@@ -287,11 +277,6 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
       } finally {
         setIsLoadingIssues(false);
       }
-    }
-    
-    // Apply time filter (client-side)
-    if (selectedTimeFilter) {
-      filteredResults = filterIssuesByTime(filteredResults, selectedTimeFilter);
     }
     
     setFilteredIssues(filteredResults);
@@ -325,19 +310,9 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
     }
   };
 
-  const handleTimeFilterClick = (period: TimeFilterOption) => {
-    if (selectedTimeFilter === period) {
-      // Deselect the time filter if it's already selected
-      setSelectedTimeFilter(null);
-    } else {
-      setSelectedTimeFilter(period);
-    }
-  };
-
   const clearFilters = () => {
     setSelectedTagId(null);
     setSelectedVehicleId(null);
-    setSelectedTimeFilter(null);
   };
 
   const toggleDrawer = (open: boolean) => () => {
@@ -418,25 +393,6 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
     
     // Open the create event modal
     setCreateEventModalOpen(true);
-  };
-
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    
-    setIsSearching(true);
-    try {
-      const results = await searchLocations(query);
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Error searching locations:', error);
-    } finally {
-      setIsSearching(false);
-    }
   };
 
   const handleOpenCreateEventModal = () => {
@@ -660,10 +616,6 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
       >
         {currentPage === 'dashboard' ? (
           <>
-            <Typography variant="h4" component="h1" sx={{ mb: 3, fontWeight: 'bold' }}>
-              Dashboard
-            </Typography>
-            
             {/* Map section */}
             <Box sx={{ position: 'relative', mb: 3, height: 500, borderRadius: 2, overflow: 'hidden' }}>
               {isLoadingEvents ? (
@@ -759,58 +711,6 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
                   )}
                 </IconButton>
               </Box>
-              
-              {/* Search Bar overlay */}
-              <Box sx={{ 
-                position: 'absolute', 
-                top: 16, 
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '90%',
-                maxWidth: 400,
-                zIndex: 1000
-              }}>
-                <SearchBar 
-                  onSearch={handleSearch} 
-                  placeholder="Search location..."
-                />
-                
-                {/* Search Results Dropdown */}
-                {searchQuery && searchResults.length > 0 && (
-                  <Paper 
-                    sx={{ 
-                      mt: 1, 
-                      maxHeight: 300, 
-                      overflow: 'auto',
-                      width: '100%',
-                      borderRadius: 2,
-                      boxShadow: '0px 4px 10px rgba(0,0,0,0.1)'
-                    }}
-                  >
-                    <List dense>
-                      {searchResults.map((result) => (
-                        <ListItem 
-                          key={result.id}
-                          onClick={() => {
-                            if (mapRef.current && result.coordinates) {
-                              mapRef.current.flyTo(result.coordinates, 15);
-                            }
-                            setSearchResults([]); // Clear results after selection
-                          }}
-                          sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)' } }}
-                        >
-                          <ListItemText 
-                            primary={result.name}
-                            secondary={result.address}
-                            primaryTypographyProps={{ fontWeight: 'medium' }}
-                            secondaryTypographyProps={{ fontSize: '0.8rem' }}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Paper>
-                )}
-              </Box>
             </Box>
             
             {/* Filters */}
@@ -827,7 +727,7 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
                 <Typography variant="h6" sx={{ fontSize: '1.1rem' }}>Filters</Typography>
                 
                 {/* Clear filters button */}
-                {(selectedTagId !== null || selectedVehicleId !== null || selectedTimeFilter !== null) && (
+                {(selectedTagId !== null || selectedVehicleId !== null) && (
                   <Button 
                     variant="outlined" 
                     size="small" 
@@ -841,7 +741,7 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
               
               <Grid container spacing={2}>
                 {/* Event Tags */}
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>Event Tags</Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {isLoadingTags ? (
@@ -865,7 +765,7 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
                 </Grid>
                 
                 {/* Vehicle Types - only show for events tab */}
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>Vehicle Types</Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {isLoadingVehicleTypes ? (
@@ -886,37 +786,6 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
                         />
                       ))
                     )}
-                  </Box>
-                </Grid>
-                
-                {/* Time Period */}
-                <Grid item xs={12} md={4}>
-                  <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'medium' }}>Time Period</Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    <Chip 
-                      label="Today"
-                      color={selectedTimeFilter === 'today' ? "error" : "default"}
-                      variant={selectedTimeFilter === 'today' ? "filled" : "outlined"}
-                      onClick={() => handleTimeFilterClick('today')}
-                      size="small"
-                      sx={{ borderRadius: 1, m: 0.5 }}
-                    />
-                    <Chip 
-                      label="This Week"
-                      color={selectedTimeFilter === 'week' ? "error" : "default"}
-                      variant={selectedTimeFilter === 'week' ? "filled" : "outlined"}
-                      onClick={() => handleTimeFilterClick('week')}
-                      size="small"
-                      sx={{ borderRadius: 1, m: 0.5 }}
-                    />
-                    <Chip 
-                      label="This Month"
-                      color={selectedTimeFilter === 'month' ? "error" : "default"}
-                      variant={selectedTimeFilter === 'month' ? "filled" : "outlined"}
-                      onClick={() => handleTimeFilterClick('month')}
-                      size="small"
-                      sx={{ borderRadius: 1, m: 0.5 }}
-                    />
                   </Box>
                 </Grid>
               </Grid>
@@ -962,7 +831,7 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
                 onEntityEdit={(entity) => handleEditEntity(entity as Event)}
                 onEntityDeleted={() => handleEntityDeleted('event')}
                 emptyMessage={
-                  selectedTagId || selectedVehicleId || selectedTimeFilter
+                  selectedTagId || selectedVehicleId
                     ? "No events match the selected filters."
                     : "You haven't created any events yet."
                 }
@@ -980,7 +849,7 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
                 onEntityEdit={(entity) => handleEditEntity(entity as Issue)}
                 onEntityDeleted={() => handleEntityDeleted('issue')}
                 emptyMessage={
-                  selectedTagId || selectedTimeFilter
+                  selectedTagId
                     ? "No issues match the selected filters."
                     : "You haven't created any issues yet."
                 }

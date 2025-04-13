@@ -17,7 +17,8 @@ import {
   CircularProgress,
   InputAdornment,
   Snackbar,
-  Alert
+  Alert,
+  Chip
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
@@ -44,14 +45,15 @@ export interface EventFormData {
   name: string;
   description: string;
   location: [number, number] | null;
-  tag_id: number | null;
-  vehicle_id: number | null;
+  tag_ids: number[];
+  vehicle_ids: number[];
 }
 
 export interface IssueFormData {
   name: string;
   description: string;
-  tag_id: number | null;
+  tag_ids: number[];
+  location: [number, number] | null;
 }
 
 type FormType = 'event' | 'issue';
@@ -60,14 +62,15 @@ const initialEventFormData: EventFormData = {
   name: '',
   description: '',
   location: null,
-  tag_id: null,
-  vehicle_id: null
+  tag_ids: [],
+  vehicle_ids: []
 };
 
 const initialIssueFormData: IssueFormData = {
   name: '',
   description: '',
-  tag_id: null
+  tag_ids: [],
+  location: null
 };
 
 const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateEventModalProps) => {
@@ -195,18 +198,32 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
 
   const handleEventSelectChange = (e: any) => {
     const { name, value } = e.target;
-    setEventFormData(prevData => ({
-      ...prevData,
-      [name]: value === '' ? null : Number(value)
-    }));
+    if (name === 'tag_ids' || name === 'vehicle_ids') {
+      setEventFormData(prevData => ({
+        ...prevData,
+        [name]: value as number[]
+      }));
+    } else {
+      setEventFormData(prevData => ({
+        ...prevData,
+        [name]: value === '' ? null : Number(value)
+      }));
+    }
   };
 
   const handleIssueSelectChange = (e: any) => {
     const { name, value } = e.target;
-    setIssueFormData(prevData => ({
-      ...prevData,
-      [name]: value === '' ? null : Number(value)
-    }));
+    if (name === 'tag_ids') {
+      setIssueFormData(prevData => ({
+        ...prevData,
+        tag_ids: value as number[]
+      }));
+    } else {
+      setIssueFormData(prevData => ({
+        ...prevData,
+        [name]: value === '' ? null : Number(value)
+      }));
+    }
   };
 
   const handleFormTypeChange = (e: any) => {
@@ -239,8 +256,8 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
           name: eventFormData.name,
           description: eventFormData.description,
           location: eventFormData.location,
-          tag_id: eventFormData.tag_id,
-          vehicle_id: eventFormData.vehicle_id,
+          tag_ids: eventFormData.tag_ids,
+          vehicle_ids: eventFormData.vehicle_ids,
           created_by: user.id
         };
         
@@ -290,7 +307,8 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
         const issueData = {
           name: issueFormData.name,
           description: issueFormData.description,
-          tag_id: issueFormData.tag_id
+          tag_ids: issueFormData.tag_ids,
+          location: issueFormData.location
         };
         
         // Send POST request to the backend with authentication token in header
@@ -363,10 +381,17 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
           
           try {
             // Set the coordinates in the form data as [longitude, latitude] to match backend
-            setEventFormData(prevData => ({
-              ...prevData,
-              location: [longitude, latitude]
-            }));
+            if (formType === 'event') {
+              setEventFormData(prevData => ({
+                ...prevData,
+                location: [longitude, latitude]
+              }));
+            } else {
+              setIssueFormData(prevData => ({
+                ...prevData,
+                location: [longitude, latitude]
+              }));
+            }
             setIsLoadingLocation(false);
           } catch (error: unknown) {
             console.error('Error processing location:', error);
@@ -479,15 +504,38 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
                 />
                 
                 <FormControl fullWidth margin="normal" required>
-                  <InputLabel id="tag-label">Event Tag</InputLabel>
+                  <InputLabel id="tag-label">Event Tags</InputLabel>
                   <Select
                     labelId="tag-label"
-                    id="tag_id"
-                    name="tag_id"
-                    value={eventFormData.tag_id || ''}
-                    label="Event Tag"
+                    id="tag_ids"
+                    name="tag_ids"
+                    multiple
+                    value={eventFormData.tag_ids}
+                    label="Event Tags"
                     onChange={handleEventSelectChange}
                     disabled={isLoadingTags || tags.length === 0}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as number[]).map((value) => {
+                          const tag = tags.find(tag => tag.id === value);
+                          return (
+                            <Chip
+                              key={value}
+                              label={tag?.name}
+                              size="small"
+                              color="primary"
+                              sx={{
+                                m: 0.25,
+                                borderRadius: '16px',
+                                '& .MuiChip-label': {
+                                  px: 1,
+                                }
+                              }}
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
                   >
                     {isLoadingTags ? (
                       <MenuItem value="">
@@ -507,15 +555,38 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
                 </FormControl>
                 
                 <FormControl fullWidth margin="normal" required>
-                  <InputLabel id="vehicle-label">Vehicle Type</InputLabel>
+                  <InputLabel id="vehicle-label">Vehicle Types</InputLabel>
                   <Select
                     labelId="vehicle-label"
-                    id="vehicle_id"
-                    name="vehicle_id"
-                    value={eventFormData.vehicle_id || ''}
-                    label="Vehicle Type"
+                    id="vehicle_ids"
+                    name="vehicle_ids"
+                    multiple
+                    value={eventFormData.vehicle_ids}
+                    label="Vehicle Types"
                     onChange={handleEventSelectChange}
                     disabled={isLoadingVehicles || vehicleTypes.length === 0}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as number[]).map((value) => {
+                          const vehicle = vehicleTypes.find(vt => vt.id === value);
+                          return (
+                            <Chip
+                              key={value}
+                              label={vehicle?.name}
+                              size="small"
+                              color="secondary"
+                              sx={{
+                                m: 0.25,
+                                borderRadius: '16px',
+                                '& .MuiChip-label': {
+                                  px: 1,
+                                }
+                              }}
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
                   >
                     {isLoadingVehicles ? (
                       <MenuItem value="">
@@ -593,15 +664,38 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
                 />
                 
                 <FormControl fullWidth margin="normal" required>
-                  <InputLabel id="issue-tag-label">Issue Tag</InputLabel>
+                  <InputLabel id="issue-tag-label">Issue Tags</InputLabel>
                   <Select
                     labelId="issue-tag-label"
-                    id="tag_id"
-                    name="tag_id"
-                    value={issueFormData.tag_id || ''}
-                    label="Issue Tag"
+                    id="tag_ids"
+                    name="tag_ids"
+                    multiple
+                    value={issueFormData.tag_ids}
+                    label="Issue Tags"
                     onChange={handleIssueSelectChange}
                     disabled={isLoadingTags || tags.length === 0}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as number[]).map((value) => {
+                          const tag = tags.find(tag => tag.id === value);
+                          return (
+                            <Chip
+                              key={value}
+                              label={tag?.name}
+                              size="small"
+                              color="primary"
+                              sx={{
+                                m: 0.25,
+                                borderRadius: '16px',
+                                '& .MuiChip-label': {
+                                  px: 1,
+                                }
+                              }}
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
                   >
                     {isLoadingTags ? (
                       <MenuItem value="">
@@ -619,6 +713,37 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
                     )}
                   </Select>
                 </FormControl>
+                
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="location"
+                  label="Location"
+                  value={locationDisplayText}
+                  disabled
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip title="Get my current location">
+                          <IconButton 
+                            edge="end" 
+                            onClick={getUserLocation}
+                            disabled={isLoadingLocation}
+                          >
+                            {isLoadingLocation ? (
+                              <CircularProgress size={24} />
+                            ) : (
+                              <MyLocationIcon />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      </InputAdornment>
+                    ),
+                  }}
+                  helperText={locationError || "Use the location button to set your current coordinates"}
+                  error={!!locationError}
+                />
               </>
             )}
           </Box>
@@ -636,12 +761,13 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
                 !eventFormData.name || 
                 !eventFormData.description || 
                 !eventFormData.location ||
-                eventFormData.tag_id === null ||
-                eventFormData.vehicle_id === null
+                eventFormData.tag_ids.length === 0 ||
+                eventFormData.vehicle_ids.length === 0
               ) : (
                 !issueFormData.name || 
                 !issueFormData.description || 
-                issueFormData.tag_id === null
+                !issueFormData.location ||
+                issueFormData.tag_ids.length === 0
               ))
             }
           >

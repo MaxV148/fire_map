@@ -5,8 +5,8 @@ export interface Event {
   name: string;
   description: string;
   location: number[]; // [longitude, latitude]
-  tag_id: number;
-  vehicle_id: number;
+  tag_ids: number[];
+  vehicles: { id: number; name: string }[];
   created_by: number;
   created_at: string;
   updated_at: string;
@@ -17,8 +17,8 @@ export interface EventUpdate {
   name?: string;
   description?: string;
   location?: number[];
-  tag_id?: number;
-  vehicle_id?: number;
+  tag_ids?: number[];
+  vehicle_ids?: number[];
 }
 
 const API_URL = 'http://localhost:8000/v1/event';
@@ -296,4 +296,4 @@ export default {
   filterEventsByTime,
   deleteEvent,
   updateEvent,
-}; 
+};

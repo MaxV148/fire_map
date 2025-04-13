@@ -5,12 +5,14 @@ from pydantic import BaseModel, ConfigDict
 
 
 class UserCreate(BaseModel):
-    username: str
+    email: str
     password: str
+    first_name: str
+    last_name: str
 
 
 class UserLogin(BaseModel):
-    username: str
+    email: str
     password: str
 
 
@@ -18,7 +20,9 @@ class Authresponse(BaseModel):
     access_token: str
     token_type: str
     id: int
-    username: str
+    email: str
+    first_name: str
+    last_name: str
     requires_2fa: bool = False
     temp_token: Optional[str] = None
 
@@ -59,7 +63,9 @@ class SecuritySettingsResponse(SecuritySettingsBase):
 
 class UserResponse(BaseModel):
     id: int
-    username: str
+    email: str
+    first_name: str
+    last_name: str
     security_settings: Optional[SecuritySettingsResponse] = None
 
     model_config = ConfigDict(from_attributes=True)

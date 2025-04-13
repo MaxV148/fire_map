@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status,Query
+from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from src.infrastructure.postgresql.db import get_db
-from src.domain.user.dependency import get_current_user
+from src.domain.user.dependency import get_current_user, is_admin
 from src.domain.user.model import User
 from src.domain.event.repository import EventRepository
-from src.domain.event.dto import EventCreate, EventUpdate, EventResponse
+from src.domain.event.dto import EventCreate, EventUpdate, EventResponse, EventFilter
 
 # Create router
 event_router = APIRouter(prefix="/event")
@@ -34,12 +35,16 @@ def create_event(
 
 @event_router.get("", response_model=List[EventResponse])
 def get_all_events(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    filters: Annotated[EventFilter, Query()],
+    db: Session = Depends(get_db), 
+    _: User = Depends(get_current_user),
 ):
-    """Get all events"""
+    """Get all events with optional filtering"""
     repository = EventRepository(db)
-    events = repository.get_all()
-
+    
+    # Verwende die Datenbankfilterung für effizientere Abfragen
+    events = repository.get_filtered_events(filters)
+    
     # Convert the location from WKBElement to a list of coordinates for each event
     for event in events:
         if event.location is not None:
@@ -133,12 +138,24 @@ def update_event(
 ):
     """Update an event"""
     repository = EventRepository(db)
-    updated_event = repository.update(event_id, event_data)
-    if not updated_event:
+    
+    # Zuerst prüfen, ob das Event existiert
+    event = repository.get_by_id(event_id)
+    if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Event with ID {event_id} not found",
         )
+    
+    # Prüfen, ob der Benutzer berechtigt ist (Ersteller oder Admin)
+    if event.created_by != current_user.id and not is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sie haben keine Berechtigung, dieses Event zu bearbeiten",
+        )
+    
+    # Event aktualisieren
+    updated_event = repository.update(event_id, event_data)
 
     # Convert the location from WKBElement to a list of coordinates
     if updated_event.location is not None:
@@ -155,10 +172,22 @@ def delete_event(
 ):
     """Delete an event"""
     repository = EventRepository(db)
-    success = repository.delete(event_id)
-    if not success:
+    
+    # Zuerst prüfen, ob das Event existiert
+    event = repository.get_by_id(event_id)
+    if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Event with ID {event_id} not found",
         )
+    
+    # Prüfen, ob der Benutzer berechtigt ist (Ersteller oder Admin)
+    if event.created_by != current_user.id and not is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sie haben keine Berechtigung, dieses Event zu löschen",
+        )
+    
+    # Event löschen
+    repository.delete(event_id)
     return None

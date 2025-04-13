@@ -12,7 +12,8 @@ def test_create_issue(client: TestClient, test_tag: Tag):
     issue_data = {
         "name": "Equipment Malfunction",
         "description": "Fire truck pump not working properly",
-        "tag_id": test_tag.id,
+        "tag_ids": [test_tag.id],
+        "location": [10.123, 20.456]  # [longitude, latitude]
     }
 
     response = client.post("/v1/issue", json=issue_data)
@@ -21,10 +22,12 @@ def test_create_issue(client: TestClient, test_tag: Tag):
     data = response.json()
     assert data["name"] == issue_data["name"]
     assert data["description"] == issue_data["description"]
-    assert data["tag_id"] == issue_data["tag_id"]
+    assert len(data["tags"]) == 1
+    assert data["tags"][0]["id"] == test_tag.id
     assert "id" in data
     assert "created_at" in data
     assert "updated_at" in data
+    assert data["location"] == issue_data["location"]
 
 
 def test_get_all_issues(client: TestClient, test_issue: Issue):
@@ -37,6 +40,10 @@ def test_get_all_issues(client: TestClient, test_issue: Issue):
     assert len(data) >= 1
     assert data[0]["name"] == test_issue.name
     assert data[0]["description"] == test_issue.description
+    assert len(data[0]["tags"]) >= 1
+    if test_issue.location is not None:
+        assert isinstance(data[0]["location"], list)
+        assert len(data[0]["location"]) == 2
 
 
 def test_get_issue_by_id(client: TestClient, test_issue: Issue):
@@ -48,6 +55,10 @@ def test_get_issue_by_id(client: TestClient, test_issue: Issue):
     assert data["id"] == test_issue.id
     assert data["name"] == test_issue.name
     assert data["description"] == test_issue.description
+    assert len(data["tags"]) >= 1
+    if test_issue.location is not None:
+        assert isinstance(data["location"], list)
+        assert len(data["location"]) == 2
 
 
 def test_get_issues_by_user(client: TestClient, test_issue: Issue, test_user: User):
@@ -59,6 +70,10 @@ def test_get_issues_by_user(client: TestClient, test_issue: Issue, test_user: Us
     assert isinstance(data, list)
     assert len(data) >= 1
     assert data[0]["name"] == test_issue.name
+    assert len(data[0]["tags"]) >= 1
+    if test_issue.location is not None:
+        assert isinstance(data[0]["location"], list)
+        assert len(data[0]["location"]) == 2
 
 
 def test_get_issues_by_tag(client: TestClient, test_issue: Issue, test_tag: Tag):
@@ -70,6 +85,10 @@ def test_get_issues_by_tag(client: TestClient, test_issue: Issue, test_tag: Tag)
     assert isinstance(data, list)
     assert len(data) >= 1
     assert data[0]["name"] == test_issue.name
+    assert any(tag["id"] == test_tag.id for tag in data[0]["tags"])
+    if test_issue.location is not None:
+        assert isinstance(data[0]["location"], list)
+        assert len(data[0]["location"]) == 2
 
 
 def test_get_issue_not_found(client: TestClient):
@@ -85,7 +104,8 @@ def test_update_issue(client: TestClient, test_issue: Issue, test_tag: Tag):
     update_data = {
         "name": "Updated Issue",
         "description": "Updated description",
-        "tag_id": test_tag.id,
+        "tag_ids": [test_tag.id],
+        "location": [11.123, 21.456]  # [longitude, latitude]
     }
 
     response = client.put(f"/v1/issue/{test_issue.id}", json=update_data)
@@ -95,12 +115,19 @@ def test_update_issue(client: TestClient, test_issue: Issue, test_tag: Tag):
     assert data["id"] == test_issue.id
     assert data["name"] == update_data["name"]
     assert data["description"] == update_data["description"]
-    assert data["tag_id"] == update_data["tag_id"]
+    assert len(data["tags"]) == 1
+    assert data["tags"][0]["id"] == test_tag.id
+    assert data["location"] == update_data["location"]
 
 
 def test_update_issue_not_found(client: TestClient):
     """Test updating a non-existent issue"""
-    update_data = {"name": "Updated Issue", "description": "Updated description"}
+    update_data = {
+        "name": "Updated Issue",
+        "description": "Updated description",
+        "tag_ids": [],
+        "location": None
+    }
 
     response = client.put("/v1/issue/999", json=update_data)
 

@@ -60,7 +60,19 @@ def db() -> Generator[Session, None, None]:
 
 
 @pytest.fixture(scope="function")
-def client(db: Session) -> Generator[TestClient, None, None]:
+def admin_role(db: Session) -> Role:
+    """
+    Create an admin role for testing.
+    """
+    role = Role(name="admin", description="Administrator role")
+    db.add(role)
+    db.commit()
+    db.refresh(role)
+    return role
+
+
+@pytest.fixture(scope="function")
+def client(db: Session, admin_role: Role) -> Generator[TestClient, None, None]:
     """
     Create a test client with a mocked database session.
     """
@@ -72,8 +84,15 @@ def client(db: Session) -> Generator[TestClient, None, None]:
         finally:
             pass
 
-    # Mock the current user for authentication
-    test_user = User(id=1, username="testuser", password="hashed_password")
+    # Create test user with admin role
+    test_user = User(
+        id=1, 
+        email="testuser@example.com", 
+        password="hashed_password", 
+        first_name="Test", 
+        last_name="User", 
+        role_id=admin_role.id
+    )
     db.add(test_user)
     db.commit()
 
@@ -93,18 +112,30 @@ def client(db: Session) -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture(scope="function")
-def test_user(db: Session) -> User:
+def test_user(db: Session, admin_role: Role) -> User:
     """
-    Create a test user.
+    Create a test user with admin role.
     """
     user = db.query(User).filter(User.id == 1).first()
+    if not user:
+        user = User(
+            id=1, 
+            email="test@user.com", 
+            password="hashed_password", 
+            first_name="Test", 
+            last_name="User", 
+            role_id=admin_role.id
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     return user
 
 
 @pytest.fixture(scope="function")
 def test_role(db: Session) -> Role:
     """
-    Create a test role.
+    Create a test role (non-admin).
     """
     role = Role(name="Test Role", description="Test role description")
     db.add(role)
@@ -152,9 +183,14 @@ def test_event(
         description="Test event description",
         location=ST_GeomFromText("POINT(10.123 20.456)"),  # Proper PostGIS point
         created_by=test_user.id,
-        tag_id=test_tag.id,
-        vehicle_id=test_vehicle_type.id,
     )
+    
+    # Add tags to the event
+    event.tags = [test_tag]
+    
+    # Add vehicles to the event
+    event.vehicles = [test_vehicle_type]
+    
     db.add(event)
     db.commit()
     db.refresh(event)
@@ -166,12 +202,18 @@ def test_issue(db: Session, test_user: User, test_tag: Tag) -> Issue:
     """
     Create a test issue.
     """
+    from geoalchemy2.functions import ST_GeomFromText
+
     issue = Issue(
         name="Test Issue",
         description="Test issue description",
         created_by_user_id=test_user.id,
-        tag_id=test_tag.id,
+        location=ST_GeomFromText("POINT(10.123 20.456)")  # Example location
     )
+    
+    # Add tags to the issue
+    issue.tags = [test_tag]
+    
     db.add(issue)
     db.commit()
     db.refresh(issue)

@@ -20,13 +20,13 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import authService from '../services/authService';
 
 interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState<LoginCredentials>({
-    username: '',
+    email: '',
     password: ''
   });
   const [loading, setLoading] = useState<boolean>(false);
@@ -110,13 +110,14 @@ const LoginPage = () => {
             margin="normal"
             required
             fullWidth
-            id="username"
-            label="Benutzername"
-            name="username"
-            autoComplete="username"
+            id="email"
+            label="E-Mail-Adresse"
+            name="email"
+            autoComplete="email"
             autoFocus
-            value={credentials.username}
+            value={credentials.email}
             onChange={handleChange}
+            type="email"
           />
           <TextField
             margin="normal"

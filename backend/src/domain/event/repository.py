@@ -1,12 +1,15 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, and_
 from typing import List, Optional
 from geoalchemy2.functions import ST_GeomFromText
 from geoalchemy2.shape import to_shape
+from datetime import datetime
 
 from src.domain.event.model import Event
-from src.domain.event.dto import EventCreate, EventUpdate
+from src.domain.event.dto import EventCreate, EventUpdate, EventFilter
 from src.domain.user.model import User
+from src.domain.tag.model import Tag
+from src.domain.vehicletype.model import VehicleType
 
 
 class EventRepository:
@@ -23,14 +26,27 @@ class EventRepository:
             lon, lat = event_data.location[0], event_data.location[1]
             wkt_point = f"POINT({lon} {lat})"
 
+        # Create event without tags and vehicles first
         db_event = Event(
             name=event_data.name,
             description=event_data.description,
-            location=ST_GeomFromText(wkt_point),
-            tag_id=event_data.tag_id,
-            vehicle_id=event_data.vehicle_id,
-            created_by=current_user.id,
+            location=ST_GeomFromText(wkt_point) if wkt_point else None,
+            created_by=current_user.id if current_user else None,
         )
+
+        # Add tags
+        if event_data.tag_ids:
+            tags = self.db.execute(
+                select(Tag).where(Tag.id.in_(event_data.tag_ids))
+            ).scalars().all()
+            db_event.tags = tags
+
+        # Add vehicles
+        if event_data.vehicle_ids:
+            vehicles = self.db.execute(
+                select(VehicleType).where(VehicleType.id.in_(event_data.vehicle_ids))
+            ).scalars().all()
+            db_event.vehicles = vehicles
 
         self.db.add(db_event)
         self.db.commit()
@@ -49,6 +65,34 @@ class EventRepository:
         result = self.db.execute(query).scalars().all()
         return result
 
+    def get_filtered_events(self, filters: EventFilter) -> List[Event]:
+        """Get events with database-side filtering"""
+        # Basis-Query erstellen
+        query = select(Event).distinct()
+        
+        # Filter für Fahrzeugtypen anwenden
+        if filters.vehicle_ids:
+            query = query.join(Event.vehicles).where(VehicleType.id.in_(filters.vehicle_ids))
+            
+        # Filter für Tags anwenden
+        if filters.tag_ids:
+            query = query.join(Event.tags).where(Tag.id.in_(filters.tag_ids))
+            
+        # Filter für Zeitraum anwenden
+        conditions = []
+        if filters.start_date:
+            conditions.append(Event.created_at >= filters.start_date)
+        if filters.end_date:
+            conditions.append(Event.created_at <= filters.end_date)
+            
+        # Bedingungen zur Query hinzufügen, falls vorhanden
+        if conditions:
+            query = query.where(and_(*conditions))
+            
+        # Query ausführen und Ergebnisse zurückgeben
+        result = self.db.execute(query).scalars().all()
+        return result
+
     def get_by_user(self, user_id: int) -> List[Event]:
         """Get all events created by a specific user"""
         query = select(Event).where(Event.created_by == user_id)
@@ -57,13 +101,13 @@ class EventRepository:
 
     def get_by_tag(self, tag_id: int) -> List[Event]:
         """Get all events with a specific tag"""
-        query = select(Event).where(Event.tag_id == tag_id)
+        query = select(Event).join(Event.tags).where(Tag.id == tag_id)
         result = self.db.execute(query).scalars().all()
         return result
 
     def get_by_vehicle(self, vehicle_id: int) -> List[Event]:
         """Get all events with a specific vehicle type"""
-        query = select(Event).where(Event.vehicle_id == vehicle_id)
+        query = select(Event).join(Event.vehicles).where(VehicleType.id == vehicle_id)
         result = self.db.execute(query).scalars().all()
         return result
 
@@ -74,34 +118,37 @@ class EventRepository:
         if not db_event:
             return None
 
-        # Prepare update data
-        update_data = {}
+        # Update basic fields
         if event_data.name is not None:
-            update_data["name"] = event_data.name
+            db_event.name = event_data.name
         if event_data.description is not None:
-            update_data["description"] = event_data.description
-        if event_data.tag_id is not None:
-            update_data["tag_id"] = event_data.tag_id
-        if event_data.vehicle_id is not None:
-            update_data["vehicle_id"] = event_data.vehicle_id
+            db_event.description = event_data.description
 
         # Handle location update
         if event_data.location is not None:
             if len(event_data.location) >= 2:
                 lon, lat = event_data.location[0], event_data.location[1]
                 wkt_point = f"POINT({lon} {lat})"
-                update_data["location"] = ST_GeomFromText(wkt_point)
+                db_event.location = ST_GeomFromText(wkt_point)
             else:
-                update_data["location"] = None
+                db_event.location = None
 
-        # Execute update if there's data to update
-        if update_data:
-            stmt = update(Event).where(Event.id == event_id).values(**update_data)
-            self.db.execute(stmt)
-            self.db.commit()
+        # Update tags
+        if event_data.tag_ids is not None:
+            tags = self.db.execute(
+                select(Tag).where(Tag.id.in_(event_data.tag_ids))
+            ).scalars().all()
+            db_event.tags = tags
 
-            # Refresh the event object
-            return self.get_by_id(event_id)
+        # Update vehicles
+        if event_data.vehicle_ids is not None:
+            vehicles = self.db.execute(
+                select(VehicleType).where(VehicleType.id.in_(event_data.vehicle_ids))
+            ).scalars().all()
+            db_event.vehicles = vehicles
+
+        self.db.commit()
+        self.db.refresh(db_event)
         return db_event
 
     def delete(self, event_id: int) -> bool:

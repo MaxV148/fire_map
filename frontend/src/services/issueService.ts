@@ -4,7 +4,7 @@ export interface Issue {
   id: number;
   name: string;
   description: string | null;
-  tag_id: number | null;
+  tag_ids: number[];
   created_by_user_id: number | null;
   created_at: string;
   updated_at: string;
@@ -14,7 +14,7 @@ export interface Issue {
 export interface IssueUpdate {
   name?: string;
   description?: string | null;
-  tag_id?: number | null;
+  tag_ids?: number[];
 }
 
 const API_URL = 'http://localhost:8000/v1/issue';

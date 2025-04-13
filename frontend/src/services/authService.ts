@@ -1,5 +1,5 @@
 interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -39,7 +39,7 @@ export const authService = {
   redirectCallback: null as (() => void) | null,
 
   /**
-   * Login with username and password
+   * Login with email and password
    * @param credentials - The login credentials
    * @returns Promise with the authentication response
    */

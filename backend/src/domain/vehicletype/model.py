@@ -4,6 +4,7 @@ from src.infrastructure.postgresql.db import Base
 from sqlalchemy import Integer, String, DateTime, func
 from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.orm import mapped_column
+from typing import List
 
 
 class VehicleType(Base):
@@ -19,4 +20,4 @@ class VehicleType(Base):
     )
 
     # Relationships
-    events = relationship("Event", back_populates="vehicle")
+    events: Mapped[List["Event"]] = relationship("Event", secondary="event_vehicles", back_populates="vehicles", cascade="all", passive_deletes=True)

@@ -36,8 +36,8 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [tagId, setTagId] = useState<string>('');
-  const [vehicleId, setVehicleId] = useState<string>('');
+  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [vehicleIds, setVehicleIds] = useState<string[]>([]);
   const [location, setLocation] = useState<number[] | undefined>(undefined);
   
   // Options for dropdowns
@@ -52,7 +52,7 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
 
   // Determine if the entity is an Event
   const isEvent = (e: any): e is Event => {
-    return 'location' in e && 'vehicle_id' in e;
+    return 'location' in e && 'vehicles' in e;
   };
 
   // Fetch tags and vehicle types on mount
@@ -70,10 +70,11 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
     if (entity) {
       setName(entity.name);
       setDescription(entity.description || '');
-      setTagId(entity.tag_id ? entity.tag_id.toString() : '');
+      setTagIds(entity.tag_ids ? entity.tag_ids.map(id => id.toString()) : []);
       
       if (isEvent(entity)) {
-        setVehicleId(entity.vehicle_id ? entity.vehicle_id.toString() : '');
+        // Extract vehicle IDs from the vehicles array
+        setVehicleIds(entity.vehicles ? entity.vehicles.map(v => v.id.toString()) : []);
         setLocation(entity.location);
       }
     }
@@ -105,12 +106,14 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
     }
   };
 
-  const handleTagChange = (event: SelectChangeEvent) => {
-    setTagId(event.target.value);
+  const handleTagChange = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    setTagIds(typeof value === 'string' ? value.split(',') : value);
   };
 
-  const handleVehicleChange = (event: SelectChangeEvent) => {
-    setVehicleId(event.target.value);
+  const handleVehicleChange = (event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    setVehicleIds(typeof value === 'string' ? value.split(',') : value);
   };
 
   const handleSubmit = async () => {
@@ -122,20 +125,31 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
       return;
     }
 
+    if (tagIds.length === 0) {
+      setError('At least one tag is required');
+      return;
+    }
+
+    // For events, validate vehicle selection
+    if (entityType === 'event' && vehicleIds.length === 0) {
+      setError('At least one vehicle type is required');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
       if (entityType === 'event' && isEvent(entity)) {
         // Update event
-        const tagIdNum = tagId ? parseInt(tagId, 10) : undefined;
-        const vehicleIdNum = vehicleId ? parseInt(vehicleId, 10) : undefined;
+        const tagIdsNum = tagIds.map(id => parseInt(id, 10));
+        const vehicleIdsNum = vehicleIds.map(id => parseInt(id, 10));
         
         const updatedEventData: Partial<EventUpdate> = {
           name,
           description,
-          tag_id: tagIdNum,
-          vehicle_id: vehicleIdNum,
+          tag_ids: tagIdsNum,
+          vehicle_ids: vehicleIdsNum,
           location
         };
         
@@ -147,12 +161,12 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
         }
       } else {
         // Update issue
-        const tagIdNum = tagId ? parseInt(tagId, 10) : undefined;
+        const tagIdsNum = tagIds.map(id => parseInt(id, 10));
         
         const updatedIssueData: Partial<IssueUpdate> = {
           name,
           description,
-          tag_id: tagIdNum
+          tag_ids: tagIdsNum
         };
         
         const success = await updateIssue(entity.id, updatedIssueData);
@@ -217,21 +231,44 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
           />
           
           <FormControl fullWidth margin="normal">
-            <InputLabel id="tag-select-label">Tag</InputLabel>
+            <InputLabel id="tag-label">Tags</InputLabel>
             <Select
-              labelId="tag-select-label"
-              value={tagId}
+              labelId="tag-label"
+              id="tag-select"
+              multiple
+              value={tagIds}
               onChange={handleTagChange}
-              label="Tag"
+              disabled={isLoadingTags}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {(selected as string[]).map((value) => {
+                    const tag = tags.find(t => t.id.toString() === value);
+                    return (
+                      <Chip 
+                        key={value} 
+                        label={tag?.name}
+                        size="small"
+                        color="primary"
+                        sx={{
+                          m: 0.25,
+                          borderRadius: '16px',
+                          '& .MuiChip-label': {
+                            px: 1,
+                          }
+                        }}
+                      />
+                    );
+                  })}
+                </Box>
+              )}
             >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
               {isLoadingTags ? (
                 <MenuItem disabled>
-                  <CircularProgress size={20} />
-                  <Typography sx={{ ml: 1 }}>Loading tags...</Typography>
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                  Loading tags...
                 </MenuItem>
+              ) : tags.length === 0 ? (
+                <MenuItem disabled>No tags available</MenuItem>
               ) : (
                 tags.map((tag) => (
                   <MenuItem key={tag.id} value={tag.id.toString()}>
@@ -244,21 +281,44 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
           
           {entityType === 'event' && (
             <FormControl fullWidth margin="normal">
-              <InputLabel id="vehicle-select-label">Vehicle Type</InputLabel>
+              <InputLabel id="vehicle-label">Vehicle Types</InputLabel>
               <Select
-                labelId="vehicle-select-label"
-                value={vehicleId}
+                labelId="vehicle-label"
+                id="vehicle-select"
+                multiple
+                value={vehicleIds}
                 onChange={handleVehicleChange}
-                label="Vehicle Type"
+                disabled={isLoadingVehicleTypes}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {(selected as string[]).map((value) => {
+                      const vehicle = vehicleTypes.find(v => v.id.toString() === value);
+                      return (
+                        <Chip 
+                          key={value} 
+                          label={vehicle?.name}
+                          size="small"
+                          color="secondary"
+                          sx={{
+                            m: 0.25,
+                            borderRadius: '16px',
+                            '& .MuiChip-label': {
+                              px: 1,
+                            }
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
               >
-                <MenuItem value="">
-                  <em>None</em>
-                </MenuItem>
                 {isLoadingVehicleTypes ? (
                   <MenuItem disabled>
-                    <CircularProgress size={20} />
-                    <Typography sx={{ ml: 1 }}>Loading vehicle types...</Typography>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    Loading vehicle types...
                   </MenuItem>
+                ) : vehicleTypes.length === 0 ? (
+                  <MenuItem disabled>No vehicle types available</MenuItem>
                 ) : (
                   vehicleTypes.map((vehicle) => (
                     <MenuItem key={vehicle.id} value={vehicle.id.toString()}>
@@ -270,19 +330,16 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
             </FormControl>
           )}
           
-          {/* Note: Location updating would typically require a map component */}
           {entityType === 'event' && location && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Current Location
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Latitude: {location[1]}, Longitude: {location[0]}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                (To update location, please create a new event)
-              </Typography>
-            </Box>
+            <TextField
+              label="Location"
+              fullWidth
+              value={`[${location[0].toFixed(6)}, ${location[1].toFixed(6)}]`}
+              margin="normal"
+              variant="outlined"
+              disabled
+              helperText="Location cannot be updated"
+            />
           )}
         </Box>
       </DialogContent>
@@ -292,13 +349,19 @@ const UpdateEntityModal = ({ open, entityType, entity, onClose, onSuccess }: Upd
           Cancel
         </Button>
         <Button 
-          onClick={handleSubmit} 
-          color="primary" 
+          onClick={handleSubmit}
           variant="contained"
+          color="primary"
           disabled={isSubmitting}
-          startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
         >
-          {isSubmitting ? 'Updating...' : 'Update'}
+          {isSubmitting ? (
+            <>
+              <CircularProgress size={20} sx={{ mr: 1, color: 'white' }} />
+              Updating...
+            </>
+          ) : (
+            'Update'
+          )}
         </Button>
       </DialogActions>
     </Dialog>

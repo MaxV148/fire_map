@@ -31,12 +31,14 @@ class User(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True, index=True
     )
-    username: Mapped[str] = mapped_column(
+    email: Mapped[str] = mapped_column(
         String, nullable=False, unique=True, index=True
     )
+    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     password: Mapped[str] = mapped_column(String, nullable=False, index=True)
     role_id: Mapped[int] = mapped_column(
-        ForeignKey("role.id"), nullable=False, index=True
+        ForeignKey("role.id"), nullable=False, index=True, server_default="2"
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

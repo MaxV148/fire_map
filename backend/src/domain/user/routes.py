@@ -30,21 +30,36 @@ user_router = APIRouter(prefix="/user")
 
 @user_router.post("/register", response_model=Authresponse)
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    existing_user = db.query(User).filter(User.username == user_data.username).first()
-    if existing_user:
+    # Prüfe, ob Email bereits existiert
+    existing_email = db.query(User).filter(User.email == user_data.email).first()
+    if existing_email:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already taken"
+        )
+
+    # Validiere first_name und last_name
+    if not user_data.first_name or not user_data.last_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="First name and last name are required"
         )
 
     hashed_password = hash_password(user_data.password)
-    new_user = User(username=user_data.username, password=hashed_password)
+    new_user = User(
+        email=user_data.email, 
+        password=hashed_password,
+        first_name=user_data.first_name,
+        last_name=user_data.last_name
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
     return Authresponse(
-        username=new_user.username,
-        access_token=create_access_token({"sub": new_user.username}),
+        email=new_user.email,
+        first_name=new_user.first_name,
+        last_name=new_user.last_name,
+        access_token=create_access_token({"sub": new_user.email}),
         token_type="bearer",
         id=new_user.id,
     )
@@ -54,11 +69,11 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
     """First step of login process. Returns temporary token if 2FA is required."""
     # Find user
-    user = db.query(User).filter(User.username == user_data.username).first()
+    user = db.query(User).filter(User.email == user_data.email).first()
     if not user or not verify_password(user_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
+            detail="Invalid email or password",
         )
 
     # Check if 2FA is required
@@ -66,10 +81,12 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
 
     if requires_2fa:
         # Create temporary token for second step
-        temp_token = create_temp_token({"sub": user.username, "step": "2fa"})
+        temp_token = create_temp_token({"sub": user.email, "step": "2fa"})
         return Authresponse(
             id=user.id,
-            username=user.username,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
             requires_2fa=True,
             temp_token=temp_token,
             token_type="bearer",
@@ -79,8 +96,10 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
     # If no 2FA required, return full access token
     return Authresponse(
         id=user.id,
-        username=user.username,
-        access_token=create_access_token({"sub": user.username}),
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        access_token=create_access_token({"sub": user.email}),
         token_type="bearer",
         requires_2fa=False,
     )
@@ -99,7 +118,7 @@ def login_step2(login_data: LoginStep2, db: Session = Depends(get_db)):
             )
 
         # Get user
-        user = db.query(User).filter(User.username == payload["sub"]).first()
+        user = db.query(User).filter(User.email == payload["sub"]).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
@@ -121,8 +140,10 @@ def login_step2(login_data: LoginStep2, db: Session = Depends(get_db)):
         # Return full access token
         return Authresponse(
             id=user.id,
-            username=user.username,
-            access_token=create_access_token({"sub": user.username}),
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            access_token=create_access_token({"sub": user.email}),
             token_type="bearer",
             requires_2fa=False,
         )
@@ -138,7 +159,9 @@ def login_step2(login_data: LoginStep2, db: Session = Depends(get_db)):
 def get_user_details(current_user: User = Depends(get_current_user)):
     return {
         "id": current_user.id,
-        "username": current_user.username,
+        "email": current_user.email,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
         "created_at": current_user.created_at,
         "otp_configured": current_user.otp_settings.otp_configured if current_user.otp_settings else False,
     }
@@ -175,7 +198,7 @@ async def setup_2fa(
     # Generate OTP URI for QR code
     totp = pyotp.TOTP(secret)
     provisioning_uri = totp.provisioning_uri(
-        name=current_user.username, issuer_name="Fire Map"
+        name=current_user.email, issuer_name="Fire Map"
     )
 
     # Generate QR code

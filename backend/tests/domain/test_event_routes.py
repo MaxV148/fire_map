@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 
 from src.domain.event.model import Event
 from src.domain.tag.model import Tag
@@ -16,8 +17,8 @@ def test_create_event(
         "name": "Fire Incident",
         "description": "Building fire on Main Street",
         "location": [10.123, 20.456],  # [longitude, latitude]
-        "tag_id": test_tag.id,
-        "vehicle_id": test_vehicle_type.id,
+        "tag_ids": [test_tag.id],  # Changed from tag_id to tag_ids as list
+        "vehicle_ids": [test_vehicle_type.id],  # Changed from vehicle_id to vehicle_ids as list
     }
 
     response = client.post("/v1/event", json=event_data)
@@ -26,8 +27,8 @@ def test_create_event(
     data = response.json()
     assert data["name"] == event_data["name"]
     assert data["description"] == event_data["description"]
-    assert data["tag_id"] == event_data["tag_id"]
-    assert data["vehicle_id"] == event_data["vehicle_id"]
+    assert data["tags"][0]["id"] == test_tag.id  # Check first tag in tags list
+    assert data["vehicles"][0]["id"] == test_vehicle_type.id  # Check first vehicle in vehicles list
     # Location should be returned as [lon, lat]
     if "location" in data and data["location"]:
         assert len(data["location"]) == 2
@@ -48,17 +49,114 @@ def test_get_all_events(client: TestClient, test_event: Event):
     assert len(data) >= 1
     assert data[0]["name"] == test_event.name
     assert data[0]["description"] == test_event.description
+    assert len(data[0]["tags"]) > 0  # Should have at least one tag
 
 
-def test_get_event_by_id(client: TestClient, test_event: Event):
-    """Test getting an event by ID"""
-    response = client.get(f"/v1/event/{test_event.id}")
+def test_filter_events_by_tag(client: TestClient, test_event: Event, test_tag: Tag):
+    """Test filtering events by tag_ids"""
+    response = client.get(f"/v1/event?tag_ids={test_tag.id}")
 
     assert response.status_code == 200
     data = response.json()
-    assert data["id"] == test_event.id
-    assert data["name"] == test_event.name
-    assert data["description"] == test_event.description
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert data[0]["name"] == test_event.name
+    assert any(tag["id"] == test_tag.id for tag in data[0]["tags"])
+
+
+def test_filter_events_by_vehicle(client: TestClient, test_event: Event, test_vehicle_type: VehicleType):
+    """Test filtering events by vehicle_ids"""
+    response = client.get(f"/v1/event?vehicle_ids={test_vehicle_type.id}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert data[0]["name"] == test_event.name
+    assert any(vehicle["id"] == test_vehicle_type.id for vehicle in data[0]["vehicles"])
+
+
+def test_filter_events_by_date_range(client: TestClient, test_event: Event, db: Session):
+    """Test filtering events by date range"""
+    # Set the created_at date to a known value for testing
+    now = datetime.now()
+    yesterday = now - timedelta(days=1)
+    tomorrow = now + timedelta(days=1)
+    
+    # Update test_event's created_at to now
+    test_event.created_at = now
+    db.commit()
+    
+    # Test filter with valid date range (should include the event)
+    response = client.get(
+        f"/v1/event?start_date={yesterday.isoformat()}&end_date={tomorrow.isoformat()}"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert data[0]["name"] == test_event.name
+    
+    # Test filter with date range before the event (should be empty)
+    two_days_ago = yesterday - timedelta(days=1)
+    response = client.get(
+        f"/v1/event?start_date={two_days_ago.isoformat()}&end_date={yesterday.isoformat()}"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 0
+
+
+def test_filter_events_combined(
+    client: TestClient, 
+    test_event: Event, 
+    test_tag: Tag, 
+    test_vehicle_type: VehicleType,
+    db: Session
+):
+    """Test filtering events with combined filters"""
+    # Set the created_at date to a known value for testing
+    now = datetime.now()
+    yesterday = now - timedelta(days=1)
+    tomorrow = now + timedelta(days=1)
+    
+    # Update test_event's created_at to now
+    test_event.created_at = now
+    db.commit()
+    
+    # Test with all filters combined
+    response = client.get(
+        f"/v1/event?tag_ids={test_tag.id}&vehicle_ids={test_vehicle_type.id}&start_date={yesterday.isoformat()}&end_date={tomorrow.isoformat()}"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert data[0]["name"] == test_event.name
+    assert any(tag["id"] == test_tag.id for tag in data[0]["tags"])
+    assert any(vehicle["id"] == test_vehicle_type.id for vehicle in data[0]["vehicles"])
+
+
+def test_filter_events_no_match(
+    client: TestClient, 
+    test_event: Event, 
+    db: Session
+):
+    """Test filtering events with no matching results"""
+    # Create a non-existent tag ID
+    non_existent_tag_id = 9999
+    
+    # Test filter with non-existent tag
+    response = client.get(f"/v1/event?tag_ids={non_existent_tag_id}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 0
 
 
 def test_get_events_by_user(client: TestClient, test_event: Event, test_user: User):
@@ -70,6 +168,7 @@ def test_get_events_by_user(client: TestClient, test_event: Event, test_user: Us
     assert isinstance(data, list)
     assert len(data) >= 1
     assert data[0]["name"] == test_event.name
+    assert len(data[0]["tags"]) > 0  # Should have at least one tag
 
 
 def test_get_events_by_tag(client: TestClient, test_event: Event, test_tag: Tag):
@@ -81,6 +180,7 @@ def test_get_events_by_tag(client: TestClient, test_event: Event, test_tag: Tag)
     assert isinstance(data, list)
     assert len(data) >= 1
     assert data[0]["name"] == test_event.name
+    assert any(tag["id"] == test_tag.id for tag in data[0]["tags"])
 
 
 def test_get_events_by_vehicle(
@@ -94,6 +194,20 @@ def test_get_events_by_vehicle(
     assert isinstance(data, list)
     assert len(data) >= 1
     assert data[0]["name"] == test_event.name
+    assert len(data[0]["tags"]) > 0  # Should have at least one tag
+    assert any(vehicle["id"] == test_vehicle_type.id for vehicle in data[0]["vehicles"])  # Check vehicle in response
+
+
+def test_get_event(client: TestClient, test_event: Event):
+    """Test getting an event by ID"""
+    response = client.get(f"/v1/event/{test_event.id}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == test_event.id
+    assert data["name"] == test_event.name
+    assert data["description"] == test_event.description
+    assert len(data["tags"]) > 0  # Should have at least one tag
 
 
 def test_get_event_not_found(client: TestClient):
@@ -104,12 +218,13 @@ def test_get_event_not_found(client: TestClient):
     assert "not found" in response.json()["detail"]
 
 
-def test_update_event(client: TestClient, test_event: Event, test_tag: Tag):
+def test_update_event(client: TestClient, test_event: Event, test_tag: Tag, test_vehicle_type: VehicleType):
     """Test updating an event"""
     update_data = {
         "name": "Updated Event",
         "description": "Updated description",
-        "tag_id": test_tag.id,
+        "tag_ids": [test_tag.id],
+        "vehicle_ids": [test_vehicle_type.id],
         "location": [11.123, 21.456],  # [longitude, latitude]
     }
 
@@ -120,7 +235,8 @@ def test_update_event(client: TestClient, test_event: Event, test_tag: Tag):
     assert data["id"] == test_event.id
     assert data["name"] == update_data["name"]
     assert data["description"] == update_data["description"]
-    assert data["tag_id"] == update_data["tag_id"]
+    assert data["tags"][0]["id"] == test_tag.id
+    assert data["vehicles"][0]["id"] == test_vehicle_type.id
     # Location should be updated
     if "location" in data and data["location"]:
         assert len(data["location"]) == 2

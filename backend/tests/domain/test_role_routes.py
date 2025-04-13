@@ -27,9 +27,12 @@ def test_get_all_roles(client: TestClient, test_role: Role):
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) >= 1
-    assert data[0]["name"] == test_role.name
-    assert data[0]["description"] == test_role.description
+    assert len(data) >= 2  # Should have at least admin and test role
+    
+    # Find the test role in the list
+    test_role_data = next(role for role in data if role["name"] == test_role.name)
+    assert test_role_data["name"] == test_role.name
+    assert test_role_data["description"] == test_role.description
 
 
 def test_get_role_by_id(client: TestClient, test_role: Role):

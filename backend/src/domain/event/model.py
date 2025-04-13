@@ -1,10 +1,28 @@
 from datetime import datetime
 
 from src.infrastructure.postgresql.db import Base
-from sqlalchemy import Integer, String, DateTime, ForeignKey, func
+from sqlalchemy import Integer, String, DateTime, ForeignKey, func, Table, Column
 from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.orm import mapped_column
 from geoalchemy2 import Geometry
+from typing import List
+
+
+
+event_tags = Table(
+    "event_tags",
+    Base.metadata,
+    Column("event_id", Integer, ForeignKey("event.id", ondelete="CASCADE"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
+event_vehicles = Table(
+    "event_vehicles",
+    Base.metadata,
+    Column("event_id", Integer, ForeignKey("event.id", ondelete="CASCADE"), primary_key=True),
+    Column("vehicle_id", Integer, ForeignKey("vehicletype.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class Event(Base):
@@ -18,10 +36,6 @@ class Event(Base):
     location: Mapped[Geometry] = mapped_column(
         Geometry(geometry_type="POINT", srid=4326), nullable=True
     )
-    tag_id: Mapped[int] = mapped_column(Integer, ForeignKey("tag.id"), nullable=True)
-    vehicle_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("vehicletype.id"), nullable=True
-    )
     created_by: Mapped[int] = mapped_column(
         Integer, ForeignKey("user.id"), nullable=True
     )
@@ -31,6 +45,6 @@ class Event(Base):
     )
 
     # Relationships
-    tag = relationship("Tag", back_populates="events")
-    vehicle = relationship("VehicleType", back_populates="events")
+    tags: Mapped[List["Tag"]] = relationship("Tag", secondary=event_tags, back_populates="events", cascade="all", passive_deletes=True)
+    vehicles: Mapped[List["VehicleType"]] = relationship("VehicleType", secondary=event_vehicles, back_populates="events", cascade="all", passive_deletes=True)
     user = relationship("User", back_populates="events")
