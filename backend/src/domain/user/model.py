@@ -31,9 +31,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True, index=True
     )
-    email: Mapped[str] = mapped_column(
-        String, nullable=False, unique=True, index=True
-    )
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     password: Mapped[str] = mapped_column(String, nullable=False, index=True)

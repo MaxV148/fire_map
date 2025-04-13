@@ -86,12 +86,12 @@ def client(db: Session, admin_role: Role) -> Generator[TestClient, None, None]:
 
     # Create test user with admin role
     test_user = User(
-        id=1, 
-        email="testuser@example.com", 
-        password="hashed_password", 
-        first_name="Test", 
-        last_name="User", 
-        role_id=admin_role.id
+        id=1,
+        email="testuser@example.com",
+        password="hashed_password",
+        first_name="Test",
+        last_name="User",
+        role_id=admin_role.id,
     )
     db.add(test_user)
     db.commit()
@@ -119,12 +119,12 @@ def test_user(db: Session, admin_role: Role) -> User:
     user = db.query(User).filter(User.id == 1).first()
     if not user:
         user = User(
-            id=1, 
-            email="test@user.com", 
-            password="hashed_password", 
-            first_name="Test", 
-            last_name="User", 
-            role_id=admin_role.id
+            id=1,
+            email="test@user.com",
+            password="hashed_password",
+            first_name="Test",
+            last_name="User",
+            role_id=admin_role.id,
         )
         db.add(user)
         db.commit()
@@ -184,13 +184,13 @@ def test_event(
         location=ST_GeomFromText("POINT(10.123 20.456)"),  # Proper PostGIS point
         created_by=test_user.id,
     )
-    
+
     # Add tags to the event
     event.tags = [test_tag]
-    
+
     # Add vehicles to the event
     event.vehicles = [test_vehicle_type]
-    
+
     db.add(event)
     db.commit()
     db.refresh(event)
@@ -208,12 +208,12 @@ def test_issue(db: Session, test_user: User, test_tag: Tag) -> Issue:
         name="Test Issue",
         description="Test issue description",
         created_by_user_id=test_user.id,
-        location=ST_GeomFromText("POINT(10.123 20.456)")  # Example location
+        location=ST_GeomFromText("POINT(10.123 20.456)"),  # Example location
     )
-    
+
     # Add tags to the issue
     issue.tags = [test_tag]
-    
+
     db.add(issue)
     db.commit()
     db.refresh(issue)

@@ -20,4 +20,10 @@ class VehicleType(Base):
     )
 
     # Relationships
-    events: Mapped[List["Event"]] = relationship("Event", secondary="event_vehicles", back_populates="vehicles", cascade="all", passive_deletes=True)
+    events: Mapped[List["Event"]] = relationship(
+        "Event",
+        secondary="event_vehicles",
+        back_populates="vehicles",
+        cascade="all",
+        passive_deletes=True,
+    )

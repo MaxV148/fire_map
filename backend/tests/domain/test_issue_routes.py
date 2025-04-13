@@ -13,7 +13,7 @@ def test_create_issue(client: TestClient, test_tag: Tag):
         "name": "Equipment Malfunction",
         "description": "Fire truck pump not working properly",
         "tag_ids": [test_tag.id],
-        "location": [10.123, 20.456]  # [longitude, latitude]
+        "location": [10.123, 20.456],  # [longitude, latitude]
     }
 
     response = client.post("/v1/issue", json=issue_data)
@@ -105,7 +105,7 @@ def test_update_issue(client: TestClient, test_issue: Issue, test_tag: Tag):
         "name": "Updated Issue",
         "description": "Updated description",
         "tag_ids": [test_tag.id],
-        "location": [11.123, 21.456]  # [longitude, latitude]
+        "location": [11.123, 21.456],  # [longitude, latitude]
     }
 
     response = client.put(f"/v1/issue/{test_issue.id}", json=update_data)
@@ -126,7 +126,7 @@ def test_update_issue_not_found(client: TestClient):
         "name": "Updated Issue",
         "description": "Updated description",
         "tag_ids": [],
-        "location": None
+        "location": None,
     }
 
     response = client.put("/v1/issue/999", json=update_data)

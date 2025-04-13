@@ -41,15 +41,15 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     if not user_data.first_name or not user_data.last_name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="First name and last name are required"
+            detail="First name and last name are required",
         )
 
     hashed_password = hash_password(user_data.password)
     new_user = User(
-        email=user_data.email, 
+        email=user_data.email,
         password=hashed_password,
         first_name=user_data.first_name,
-        last_name=user_data.last_name
+        last_name=user_data.last_name,
     )
     db.add(new_user)
     db.commit()
@@ -163,7 +163,9 @@ def get_user_details(current_user: User = Depends(get_current_user)):
         "first_name": current_user.first_name,
         "last_name": current_user.last_name,
         "created_at": current_user.created_at,
-        "otp_configured": current_user.otp_settings.otp_configured if current_user.otp_settings else False,
+        "otp_configured": current_user.otp_settings.otp_configured
+        if current_user.otp_settings
+        else False,
     }
 
 

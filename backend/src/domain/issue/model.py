@@ -11,8 +11,15 @@ from geoalchemy2 import Geometry
 issue_tags = Table(
     "issue_tags",
     Base.metadata,
-    Column("issue_id", Integer, ForeignKey("issue.id", ondelete="CASCADE"), primary_key=True),
-    Column("tag_id", Integer, ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "issue_id",
+        Integer,
+        ForeignKey("issue.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "tag_id", Integer, ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    ),
 )
 
 
@@ -36,5 +43,11 @@ class Issue(Base):
     )
 
     # Relationships
-    tags: Mapped[List["Tag"]] = relationship("Tag", secondary=issue_tags, back_populates="issues", cascade="all", passive_deletes=True)
+    tags: Mapped[List["Tag"]] = relationship(
+        "Tag",
+        secondary=issue_tags,
+        back_populates="issues",
+        cascade="all",
+        passive_deletes=True,
+    )
     user = relationship("User")

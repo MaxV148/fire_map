@@ -30,14 +30,16 @@ class IssueRepository:
         # Convert coordinates to PostGIS geometry if provided
         location = None
         if issue_data.location:
-            location = ST_GeomFromText(f"POINT({issue_data.location[0]} {issue_data.location[1]})")
+            location = ST_GeomFromText(
+                f"POINT({issue_data.location[0]} {issue_data.location[1]})"
+            )
 
         # Create the issue
         db_issue = Issue(
             name=issue_data.name,
             description=issue_data.description,
             created_by_user_id=current_user.id if current_user else None,
-            location=location
+            location=location,
         )
 
         # Add tags if provided
@@ -48,7 +50,7 @@ class IssueRepository:
         self.db.add(db_issue)
         self.db.commit()
         self.db.refresh(db_issue)
-        
+
         # Convert location to coordinates before returning
         db_issue.location = self.get_location_coordinates(db_issue)
         return db_issue
@@ -100,7 +102,9 @@ class IssueRepository:
 
         # Update location if provided
         if issue_data.location is not None:
-            db_issue.location = ST_GeomFromText(f"POINT({issue_data.location[0]} {issue_data.location[1]})")
+            db_issue.location = ST_GeomFromText(
+                f"POINT({issue_data.location[0]} {issue_data.location[1]})"
+            )
 
         # Update tags if provided
         if issue_data.tag_ids is not None:
@@ -109,7 +113,7 @@ class IssueRepository:
 
         self.db.commit()
         self.db.refresh(db_issue)
-        
+
         # Convert location to coordinates before returning
         db_issue.location = self.get_location_coordinates(db_issue)
         return db_issue

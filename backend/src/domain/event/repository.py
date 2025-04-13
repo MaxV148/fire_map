@@ -36,16 +36,24 @@ class EventRepository:
 
         # Add tags
         if event_data.tag_ids:
-            tags = self.db.execute(
-                select(Tag).where(Tag.id.in_(event_data.tag_ids))
-            ).scalars().all()
+            tags = (
+                self.db.execute(select(Tag).where(Tag.id.in_(event_data.tag_ids)))
+                .scalars()
+                .all()
+            )
             db_event.tags = tags
 
         # Add vehicles
         if event_data.vehicle_ids:
-            vehicles = self.db.execute(
-                select(VehicleType).where(VehicleType.id.in_(event_data.vehicle_ids))
-            ).scalars().all()
+            vehicles = (
+                self.db.execute(
+                    select(VehicleType).where(
+                        VehicleType.id.in_(event_data.vehicle_ids)
+                    )
+                )
+                .scalars()
+                .all()
+            )
             db_event.vehicles = vehicles
 
         self.db.add(db_event)
@@ -69,26 +77,28 @@ class EventRepository:
         """Get events with database-side filtering"""
         # Basis-Query erstellen
         query = select(Event).distinct()
-        
+
         # Filter für Fahrzeugtypen anwenden
         if filters.vehicle_ids:
-            query = query.join(Event.vehicles).where(VehicleType.id.in_(filters.vehicle_ids))
-            
+            query = query.join(Event.vehicles).where(
+                VehicleType.id.in_(filters.vehicle_ids)
+            )
+
         # Filter für Tags anwenden
         if filters.tag_ids:
             query = query.join(Event.tags).where(Tag.id.in_(filters.tag_ids))
-            
+
         # Filter für Zeitraum anwenden
         conditions = []
         if filters.start_date:
             conditions.append(Event.created_at >= filters.start_date)
         if filters.end_date:
             conditions.append(Event.created_at <= filters.end_date)
-            
+
         # Bedingungen zur Query hinzufügen, falls vorhanden
         if conditions:
             query = query.where(and_(*conditions))
-            
+
         # Query ausführen und Ergebnisse zurückgeben
         result = self.db.execute(query).scalars().all()
         return result
@@ -135,16 +145,24 @@ class EventRepository:
 
         # Update tags
         if event_data.tag_ids is not None:
-            tags = self.db.execute(
-                select(Tag).where(Tag.id.in_(event_data.tag_ids))
-            ).scalars().all()
+            tags = (
+                self.db.execute(select(Tag).where(Tag.id.in_(event_data.tag_ids)))
+                .scalars()
+                .all()
+            )
             db_event.tags = tags
 
         # Update vehicles
         if event_data.vehicle_ids is not None:
-            vehicles = self.db.execute(
-                select(VehicleType).where(VehicleType.id.in_(event_data.vehicle_ids))
-            ).scalars().all()
+            vehicles = (
+                self.db.execute(
+                    select(VehicleType).where(
+                        VehicleType.id.in_(event_data.vehicle_ids)
+                    )
+                )
+                .scalars()
+                .all()
+            )
             db_event.vehicles = vehicles
 
         self.db.commit()

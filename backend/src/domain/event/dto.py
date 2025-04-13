@@ -57,20 +57,16 @@ class EventResponse(BaseModel):
 
 class EventFilter(BaseModel):
     """Modell für Event Filter Parameter"""
+
     vehicle_ids: Optional[List[int]] = Field(
         None, description="Filter events by vehicle type IDs"
     )
-    tag_ids: Optional[List[int]] = Field(
-        None, description="Filter events by tag IDs"
-    )
+    tag_ids: Optional[List[int]] = Field(None, description="Filter events by tag IDs")
     start_date: Optional[datetime] = Field(
         None, description="Filter events starting from this date"
-    )   
+    )
     end_date: Optional[datetime] = Field(
         None, description="Filter events until this date"
     )
-    
-    model_config = ConfigDict(
-        populate_by_name=True,
-        extra="ignore"
-    )
+
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")

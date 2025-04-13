@@ -19,5 +19,9 @@ class Tag(Base):
     )
 
     # Relationships
-    events: Mapped[List["Event"]] = relationship("Event", secondary="event_tags", back_populates="tags")
-    issues: Mapped[List["Issue"]] = relationship("Issue", secondary="issue_tags", back_populates="tags")
+    events: Mapped[List["Event"]] = relationship(
+        "Event", secondary="event_tags", back_populates="tags"
+    )
+    issues: Mapped[List["Issue"]] = relationship(
+        "Issue", secondary="issue_tags", back_populates="tags"
+    )

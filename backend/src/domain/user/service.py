@@ -47,7 +47,7 @@ def verify_temp_token(token: str) -> Dict:
     """Verify a temporary token and return its payload."""
     try:
         payload = jwt.decode(
-                token, settings.secret_key, algorithms=[settings.algorithm]
+            token, settings.secret_key, algorithms=[settings.algorithm]
         )
         return payload
     except jwt.InvalidTokenError:

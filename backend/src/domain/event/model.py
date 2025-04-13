@@ -8,20 +8,36 @@ from geoalchemy2 import Geometry
 from typing import List
 
 
-
 event_tags = Table(
     "event_tags",
     Base.metadata,
-    Column("event_id", Integer, ForeignKey("event.id", ondelete="CASCADE"), primary_key=True),
-    Column("tag_id", Integer, ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "event_id",
+        Integer,
+        ForeignKey("event.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "tag_id", Integer, ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    ),
 )
 
 
 event_vehicles = Table(
     "event_vehicles",
     Base.metadata,
-    Column("event_id", Integer, ForeignKey("event.id", ondelete="CASCADE"), primary_key=True),
-    Column("vehicle_id", Integer, ForeignKey("vehicletype.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "event_id",
+        Integer,
+        ForeignKey("event.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "vehicle_id",
+        Integer,
+        ForeignKey("vehicletype.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
 )
 
 
@@ -45,6 +61,18 @@ class Event(Base):
     )
 
     # Relationships
-    tags: Mapped[List["Tag"]] = relationship("Tag", secondary=event_tags, back_populates="events", cascade="all", passive_deletes=True)
-    vehicles: Mapped[List["VehicleType"]] = relationship("VehicleType", secondary=event_vehicles, back_populates="events", cascade="all", passive_deletes=True)
+    tags: Mapped[List["Tag"]] = relationship(
+        "Tag",
+        secondary=event_tags,
+        back_populates="events",
+        cascade="all",
+        passive_deletes=True,
+    )
+    vehicles: Mapped[List["VehicleType"]] = relationship(
+        "VehicleType",
+        secondary=event_vehicles,
+        back_populates="events",
+        cascade="all",
+        passive_deletes=True,
+    )
     user = relationship("User", back_populates="events")

@@ -35,6 +35,7 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
 
+
 def is_admin(user: User) -> bool:
     """
     Überprüft, ob ein Benutzer die Admin-Rolle hat.

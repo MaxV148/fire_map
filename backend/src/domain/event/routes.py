@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status,Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -36,15 +36,15 @@ def create_event(
 @event_router.get("", response_model=List[EventResponse])
 def get_all_events(
     filters: Annotated[EventFilter, Query()],
-    db: Session = Depends(get_db), 
+    db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
     """Get all events with optional filtering"""
     repository = EventRepository(db)
-    
+
     # Verwende die Datenbankfilterung für effizientere Abfragen
     events = repository.get_filtered_events(filters)
-    
+
     # Convert the location from WKBElement to a list of coordinates for each event
     for event in events:
         if event.location is not None:
@@ -138,7 +138,7 @@ def update_event(
 ):
     """Update an event"""
     repository = EventRepository(db)
-    
+
     # Zuerst prüfen, ob das Event existiert
     event = repository.get_by_id(event_id)
     if not event:
@@ -146,14 +146,14 @@ def update_event(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Event with ID {event_id} not found",
         )
-    
+
     # Prüfen, ob der Benutzer berechtigt ist (Ersteller oder Admin)
     if event.created_by != current_user.id and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Sie haben keine Berechtigung, dieses Event zu bearbeiten",
         )
-    
+
     # Event aktualisieren
     updated_event = repository.update(event_id, event_data)
 
@@ -172,7 +172,7 @@ def delete_event(
 ):
     """Delete an event"""
     repository = EventRepository(db)
-    
+
     # Zuerst prüfen, ob das Event existiert
     event = repository.get_by_id(event_id)
     if not event:
@@ -180,14 +180,14 @@ def delete_event(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Event with ID {event_id} not found",
         )
-    
+
     # Prüfen, ob der Benutzer berechtigt ist (Ersteller oder Admin)
     if event.created_by != current_user.id and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Sie haben keine Berechtigung, dieses Event zu löschen",
         )
-    
+
     # Event löschen
     repository.delete(event_id)
     return None

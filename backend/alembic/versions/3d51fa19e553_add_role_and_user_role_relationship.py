@@ -31,7 +31,9 @@ def upgrade() -> None:
     )
 
     # Füge role_id zur User-Tabelle hinzu (zunächst nullable)
-    op.add_column("user", sa.Column("role_id", sa.Integer(), nullable=True, server_default="2"))
+    op.add_column(
+        "user", sa.Column("role_id", sa.Integer(), nullable=True, server_default="2")
+    )
     op.create_index(op.f("ix_user_role_id"), "user", ["role_id"], unique=False)
     op.create_foreign_key("fk_user_role_id", "user", "role", ["role_id"], ["id"])
 
