@@ -33,12 +33,13 @@ pipeline {
             steps {
                 echo 'Installing uv...'
                 sh 'pip install uv'
-                sh 'cd ./backend'
-                sh 'echo `ls -lh`'
-                sh 'uv venv .venv --seed'
-                sh '. .venv/bin/activate && uv sync'
-                sh '. .venv/bin/activate && uv build --out dist/'
-                archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
+                dir('./backend'){
+                    sh 'uv venv .venv --seed'
+                    sh '. .venv/bin/activate && uv sync'
+                    sh '. .venv/bin/activate && uv build --out dist/'
+                    archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
+                }
+  
             }
         }
 
