@@ -34,6 +34,7 @@ pipeline {
                 echo 'Installing uv...'
                 sh 'pip install uv'
                 sh 'cd ./backend'
+                sh 'echo `ls -lh`'
                 sh 'uv venv .venv --seed'
                 sh '. .venv/bin/activate && uv sync'
                 sh '. .venv/bin/activate && uv build --out dist/'
