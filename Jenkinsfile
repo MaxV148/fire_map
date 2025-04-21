@@ -43,15 +43,13 @@ pipeline {
             }
         }
 
-        stage('3. (Optional) Test') {
+/*         stage('3. (Optional) Test') {
             steps {
-                // Füge hier deine Testschritte hinzu
-                // Beispiel: pytest ausführen
                 echo 'Running tests...'
-                // sh '. .venv/bin/activate && pip install pytest' // Falls nicht in requirements.txt
-                // sh '. .venv/bin/activate && pytest tests/'
+                sh '. .venv/bin/activate && pip install pytest' // Falls nicht in requirements.txt
+                sh '. .venv/bin/activate && pytest tests/'
             }
-        }
+        } */
 
         stage('4. Deploy to Server') {
             steps {
