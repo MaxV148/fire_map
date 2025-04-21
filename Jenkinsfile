@@ -135,7 +135,7 @@ pipeline {
             } // Ende steps
         } // Ende stage 'Deploy'
 
-        stage('5. Cleanup Old Releases') {
+/*         stage('5. Cleanup Old Releases') {
              steps {
                 script {
                      sshagent(credentials: [SSH_CREDENTIALS_ID]) {
@@ -157,7 +157,7 @@ pipeline {
                     }
                 }
             }
-        } 
+        }  */
 
     } // Ende stages
 
