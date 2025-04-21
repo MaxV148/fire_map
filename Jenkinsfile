@@ -54,7 +54,7 @@ pipeline {
         stage('4. Deploy to Server') {
             steps {
                 script {
-                    def artifactPattern = 'dist/*.whl'
+                    def artifactPattern = './dist/*.whl'
                     def artifacts = findFiles(glob: artifactPattern)
                     if (artifacts.length == 0) {
                         error "Build artifact (.whl) not found in ${artifactPattern}"
