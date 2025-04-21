@@ -53,88 +53,87 @@ pipeline {
 
         stage('4. Deploy to Server') {
             steps {
-                script {
-                    def artifactPattern = 'backend/dist/*.whl'
-                    def artifacts = findFiles(glob: artifactPattern)
-                    if (artifacts.length == 0) {
-                        error "Build artifact (.whl) not found in ${artifactPattern}"
-                    }
-                    def artifactPath = artifacts[0].path
-                    def artifactName = artifacts[0].name
-                    echo "Found artifact: ${artifactName}"
+                def artifactPattern = 'backend/dist/*.whl'
+                def artifacts = findFiles(glob: artifactPattern)
+                if (artifacts.length == 0) {
+                    error "Build artifact (.whl) not found in ${artifactPattern}"
+                }
+                def artifactPath = artifacts[0].path
+                def artifactName = artifacts[0].name
+                echo "Found artifact: ${artifactName}"
 
-                    def releaseDir = "${env.RELEASES_DIR}/${env.BUILD_NUMBER}"
-                    def currentLink = "${env.RELEASE_BASE_DIR}/${env.CURRENT_LINK_NAME}"
+                def releaseDir = "${env.RELEASES_DIR}/${env.BUILD_NUMBER}"
+                def currentLink = "${env.RELEASE_BASE_DIR}/${env.CURRENT_LINK_NAME}"
 
-                    sshagent(credentials: [SSH_CREDENTIALS_ID]) {
-                        echo "Connecting to ${TARGET_USER_HOST}..."
+                sshagent(credentials: [SSH_CREDENTIALS_ID]) {
+                    echo "Connecting to ${TARGET_USER_HOST}..."
 
-                        // 1. Erstelle das Release-Verzeichnis auf dem Zielserver
-                        sh """
-                            ssh ${TARGET_USER_HOST} ' \
-                                echo "Creating release directory ${releaseDir}..."; \
-                                mkdir -p ${releaseDir}; \
-                                echo "Directory created."; \
-                            '
-                        """
+                    // 1. Erstelle das Release-Verzeichnis auf dem Zielserver
+                    sh """
+                        ssh ${TARGET_USER_HOST} ' \
+                            echo "Creating release directory ${releaseDir}..."; \
+                            mkdir -p ${releaseDir}; \
+                            echo "Directory created."; \
+                        '
+                    """
 
-                        // 2. Kopiere das Artefakt (Wheel) auf den Zielserver
-                        sh """
-                            echo "Copying artifact ${artifactName} to ${releaseDir}...";
-                            scp ${artifactPath} ${TARGET_USER_HOST}:${releaseDir}/
-                            echo "Artifact copied.";
-                        """
+                    // 2. Kopiere das Artefakt (Wheel) auf den Zielserver
+                    sh """
+                        echo "Copying artifact ${artifactName} to ${releaseDir}...";
+                        scp ${artifactPath} ${TARGET_USER_HOST}:${releaseDir}/
+                        echo "Artifact copied.";
+                    """
 
-                        // 3. Führe serverseitige Setup-Schritte aus
-                        sh """
-                            ssh ${TARGET_USER_HOST} ' \
-                                echo "Setting up environment in ${releaseDir}..."; \
-                                cd ${releaseDir}; \
-                                \
-                                echo "Creating Python virtual environment..."; \
-                                python3 -m venv .venv; \
-                                \
-                                echo "Activating virtual environment and installing wheel..."; \
-                                source .venv/bin/activate; \
-                                pip install --quiet ${artifactName}; \
-                                deactivate; \
-                                \
-                                echo "Copying configuration files (Example)..."; \
-                                # FÜGE HIER BEFEHLE ZUM KOPIEREN VON KONFIG-DATEIEN HINZU (z.B. .env)
-                                # cp /path/to/shared/config/.env ${releaseDir}/
-                                \
-                                echo "Running database migrations (Example)..."; \
-                                # FÜGE HIER BEFEHLE FÜR DB-MIGRATIONEN HINZU (z.B. mit Alembic)
-                                # source .venv/bin/activate; \
-                                # alembic upgrade head; \
-                                # deactivate; \
-                                \
-                                echo "Server-side setup for release ${env.BUILD_NUMBER} complete."; \
-                            '
-                        """
+                    // 3. Führe serverseitige Setup-Schritte aus
+                    sh """
+                        ssh ${TARGET_USER_HOST} ' \
+                            echo "Setting up environment in ${releaseDir}..."; \
+                            cd ${releaseDir}; \
+                            \
+                            echo "Creating Python virtual environment..."; \
+                            python3 -m venv .venv; \
+                            \
+                            echo "Activating virtual environment and installing wheel..."; \
+                            source .venv/bin/activate; \
+                            pip install --quiet ${artifactName}; \
+                            deactivate; \
+                            \
+                            echo "Copying configuration files (Example)..."; \
+                            # FÜGE HIER BEFEHLE ZUM KOPIEREN VON KONFIG-DATEIEN HINZU (z.B. .env)
+                            # cp /path/to/shared/config/.env ${releaseDir}/
+                            \
+                            echo "Running database migrations (Example)..."; \
+                            # FÜGE HIER BEFEHLE FÜR DB-MIGRATIONEN HINZU (z.B. mit Alembic)
+                            # source .venv/bin/activate; \
+                            # alembic upgrade head; \
+                            # deactivate; \
+                            \
+                            echo "Server-side setup for release ${env.BUILD_NUMBER} complete."; \
+                        '
+                    """
 
-                        // 4. Aktualisiere den 'current' Symlink *atomar* auf das neue Release
-                        sh """
-                            ssh ${TARGET_USER_HOST} ' \
-                                echo "Updating symbolic link ${currentLink} -> ${releaseDir}"; \
-                                ln -sfn ${releaseDir} ${currentLink}; \
-                                echo "Symbolic link updated."; \
-                            '
-                        """
+                    // 4. Aktualisiere den 'current' Symlink *atomar* auf das neue Release
+                    sh """
+                        ssh ${TARGET_USER_HOST} ' \
+                            echo "Updating symbolic link ${currentLink} -> ${releaseDir}"; \
+                            ln -sfn ${releaseDir} ${currentLink}; \
+                            echo "Symbolic link updated."; \
+                        '
+                    """
 
-                        // 5. Starte den Anwendungs-Service neu
-                        sh """
-                            ssh ${TARGET_USER_HOST} ' \
-                                echo "Restarting application service (${APP_SERVICE_NAME})..."; \
-                                sudo systemctl restart ${APP_SERVICE_NAME}; \
-                                echo "Service restart command sent."; \
-                            '
-                        """
+                    // 5. Starte den Anwendungs-Service neu
+                    sh """
+                        ssh ${TARGET_USER_HOST} ' \
+                            echo "Restarting application service (${APP_SERVICE_NAME})..."; \
+                            sudo systemctl restart ${APP_SERVICE_NAME}; \
+                            echo "Service restart command sent."; \
+                        '
+                    """
 
-                        echo "Deployment of build ${env.BUILD_NUMBER} completed successfully."
+                    echo "Deployment of build ${env.BUILD_NUMBER} completed successfully."
 
-                    } // Ende sshagent
-                } // Ende script
+                } // Ende sshagent
+                
             } // Ende steps
         } // Ende stage 'Deploy'
 
