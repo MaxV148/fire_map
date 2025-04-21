@@ -36,7 +36,7 @@ pipeline {
                 dir('./backend'){
                     sh 'uv venv .venv --seed'
                     sh '. .venv/bin/activate && uv sync'
-                    sh '. .venv/bin/activate && uv build --out dist/'
+                    sh '. .venv/bin/activate && uv build --out-dir dist/'
                     archiveArtifacts artifacts: 'dist/*.whl', fingerprint: true
                 }
   
