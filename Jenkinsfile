@@ -29,7 +29,7 @@ pipeline {
         stage('2. Build Artifact with UV') {
             steps {
                 echo 'Installing uv...'
-                sh 'wget -qO- https://astral.sh/uv/install.sh | sh'
+                sh 'pip install uv'
                 sh 'cd ./backend'
                 sh 'uv venv .venv --seed'
                 sh '. .venv/bin/activate && uv sync'
