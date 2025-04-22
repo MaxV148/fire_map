@@ -126,7 +126,7 @@ pipeline {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
                                 echo "Restarting application service (${APP_SERVICE_NAME})..."; \
-                                sudo systemctl restart ${APP_SERVICE_NAME}; \
+                                # sudo systemctl restart ${APP_SERVICE_NAME}; \
                                 echo "Service restart command sent."; \
                             '
                         """
