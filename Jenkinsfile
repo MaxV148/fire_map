@@ -143,11 +143,11 @@ pipeline {
                 script {
                      sshagent(credentials: [SSH_CREDENTIALS_ID]) {
                         echo "Cleaning up old releases on ${TARGET_USER_HOST}, keeping last ${RELEASES_TO_KEEP}..."
-                        sh """
+                        sh '''
                             ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
-                                cd "${env.RELEASES_DIR}" && \
+                                cd ${env.RELEASES_DIR} && \
                                 COUNT=\$(ls -1td . | grep '^[0-9]*$' | wc -l) && \
-                                if [ "\$COUNT" -gt "${RELEASES_TO_KEEP}" ]; then \
+                                if [ "\$COUNT" -gt ${RELEASES_TO_KEEP} ]; then \
                                     echo "Found \$COUNT releases, keeping ${RELEASES_TO_KEEP}. Deleting old ones..."; \
                                     ls -1td . | grep '^[0-9]*$' | tail -n +\$((${RELEASES_TO_KEEP} + 1)) | xargs --no-run-if-empty echo "Deleting:" && \
                                     ls -1td . | grep '^[0-9]*$' | tail -n +\$((${RELEASES_TO_KEEP} + 1)) | xargs --no-run-if-empty rm -rf; \
@@ -156,7 +156,7 @@ pipeline {
                                     echo "Found \$COUNT releases. No cleanup needed (keeping up to ${RELEASES_TO_KEEP})."; \
                                 fi \
                             '
-                        """
+                        '''
                     }
                 }
             }
