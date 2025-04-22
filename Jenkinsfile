@@ -138,13 +138,13 @@ pipeline {
             } // Ende steps
         } // Ende stage 'Deploy'
 
-/*         stage('5. Cleanup Old Releases') {
+         stage('5. Cleanup Old Releases') {
              steps {
                 script {
                      sshagent(credentials: [SSH_CREDENTIALS_ID]) {
                         echo "Cleaning up old releases on ${TARGET_USER_HOST}, keeping last ${RELEASES_TO_KEEP}..."
                         sh """
-                            ssh ${TARGET_USER_HOST} ' \
+                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
                                 cd ${env.RELEASES_DIR} && \
                                 COUNT=\$(ls -1td . | grep '^[0-9]*$' | wc -l) && \
                                 if [ "\$COUNT" -gt ${RELEASES_TO_KEEP} ]; then \
@@ -160,7 +160,7 @@ pipeline {
                     }
                 }
             }
-        }  */
+        } 
 
     } // Ende stages
 
