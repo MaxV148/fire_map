@@ -71,7 +71,7 @@ pipeline {
 
                         // 1. Erstelle das Release-Verzeichnis auf dem Zielserver
                         sh """
-                            ssh ${TARGET_USER_HOST} ' \
+                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
                                 echo "Creating release directory ${releaseDir}..."; \
                                 mkdir -p ${releaseDir}; \
                                 echo "Directory created."; \
@@ -81,13 +81,13 @@ pipeline {
                         // 2. Kopiere das Artefakt (Wheel) auf den Zielserver
                         sh """
                             echo "Copying artifact ${artifactName} to ${releaseDir}...";
-                            scp ${artifactPath} ${TARGET_USER_HOST}:${releaseDir}/
+                            scp -o StrictHostKeyChecking=no ${artifactPath} ${TARGET_USER_HOST}:${releaseDir}/
                             echo "Artifact copied.";
                         """
 
                         // 3. Führe serverseitige Setup-Schritte aus
                         sh """
-                            ssh ${TARGET_USER_HOST} ' \
+                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
                                 echo "Setting up environment in ${releaseDir}..."; \
                                 cd ${releaseDir}; \
                                 \
@@ -115,7 +115,7 @@ pipeline {
 
                         // 4. Aktualisiere den 'current' Symlink *atomar* auf das neue Release
                         sh """
-                            ssh ${TARGET_USER_HOST} ' \
+                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
                                 echo "Updating symbolic link ${currentLink} -> ${releaseDir}"; \
                                 ln -sfn ${releaseDir} ${currentLink}; \
                                 echo "Symbolic link updated."; \
@@ -124,7 +124,7 @@ pipeline {
 
                         // 5. Starte den Anwendungs-Service neu
                         sh """
-                            ssh ${TARGET_USER_HOST} ' \
+                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
                                 echo "Restarting application service (${APP_SERVICE_NAME})..."; \
                                 sudo systemctl restart ${APP_SERVICE_NAME}; \
                                 echo "Service restart command sent."; \
