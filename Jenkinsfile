@@ -143,29 +143,37 @@ stage('5. Cleanup Old Releases') {
                 script {
                      sshagent(credentials: [SSH_CREDENTIALS_ID]) {
                         echo "Cleaning up old releases on ${TARGET_USER_HOST}, keeping last ${RELEASES_TO_KEEP}..."
-                        // Wechsle zu dreifachen doppelten Anführungszeichen für Groovy-Interpolation
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \\
-                                # Jenkins Variable wird jetzt korrekt von Groovy eingesetzt
-                                cd ${env.RELEASES_DIR} && \\
-                                # Dollarzeichen ($) für Remote-Shell escapen: \$ und \$(...)
-                                COUNT=\\$(ls -1td . | grep '^[0-9]*$' | wc -l) && \\
-                                # Jenkins Variable ${RELEASES_TO_KEEP} wird eingesetzt, Remote \$COUNT wird escaped
-                                if [ "\\\$COUNT" -gt ${RELEASES_TO_KEEP} ]; then \\
-                                    echo "Found \\\$COUNT releases, keeping ${RELEASES_TO_KEEP}. Deleting old ones..."; \\
-                                    # Dollarzeichen ($) für Remote-Shell escapen
-                                    ls -1td . | grep '^[0-9]*$' | tail -n +\\$((${RELEASES_TO_KEEP} + 1)) | xargs --no-run-if-empty echo "Deleting:" && \\
-                                    ls -1td . | grep '^[0-9]*$' | tail -n +\\$((${RELEASES_TO_KEEP} + 1)) | xargs --no-run-if-empty rm -rf; \\
-                                    echo "Old releases cleaned up."; \\
-                                else \\
-                                    echo "Found \\\$COUNT releases. No cleanup needed (keeping up to ${RELEASES_TO_KEEP})."; \\
-                                fi \\
-                            '
-                        """ // Ende des Groovy-Strings mit dreifachen doppelten Anführungszeichen
-                    }
-                }
-            }
-        }
+
+                        // 1. Bereite den Remote-Befehl als Groovy-String vor.
+                        //    Hier findet die Interpolation der Jenkins-Variablen statt.
+                        //    Wir verwenden """...""" für die Groovy-Variable und escapen weiterhin '$' für die Remote-Shell.
+                        //    Wir quoten den Pfad für die Remote-Shell mit einfachen Anführungszeichen für Robustheit.
+                        def remoteScript = """
+                            cd '${env.RELEASES_DIR}' && \\
+                            COUNT=\\$(ls -1td . | grep '^[0-9]*\$' | wc -l) && \\
+                            if [ "\\\$COUNT" -gt ${RELEASES_TO_KEEP} ]; then \\
+                                echo "Found \\\$COUNT releases, keeping ${RELEASES_TO_KEEP}. Deleting old ones..."; \\
+                                ls -1td . | grep '^[0-9]*\$' | tail -n +\\$((${RELEASES_TO_KEEP} + 1)) | xargs --no-run-if-empty echo "Deleting:" && \\
+                                ls -1td . | grep '^[0-9]*\$' | tail -n +\\$((${RELEASES_TO_KEEP} + 1)) | xargs --no-run-if-empty rm -rf; \\
+                                echo "Old releases cleaned up."; \\
+                            else \\
+                                echo "Found \\\$COUNT releases. No cleanup needed (keeping up to ${RELEASES_TO_KEEP})."; \\
+                            fi
+                        """ // Ende der Zuweisung zu remoteScript
+
+                        // 2. Baue den finalen ssh-Befehl zusammen.
+                        //    Wir übergeben den 'remoteScript' als einzelnes Argument in einfachen Anführungszeichen ('...')
+                        //    an ssh, damit die Remote-Shell ihn korrekt interpretiert.
+                        //    ${TARGET_USER_HOST} wird hier noch von Groovy interpoliert.
+                        def sshCommand = "ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} '${remoteScript}'"
+
+                        // 3. Führe den zusammengesetzten Befehl aus.
+                        sh sshCommand
+
+                    } // Ende sshagent
+                } // Ende script
+            } // Ende steps
+        } // Ende stage 'Cleanup'
 
     } // Ende stages
 
