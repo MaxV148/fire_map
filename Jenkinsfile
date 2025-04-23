@@ -81,7 +81,7 @@ pipeline {
                         // 2. Kopiere das Artefakt (Wheel) auf den Zielserver
                         sh """
                             echo "Copying artifact ${artifactName} to ${releaseDir}...";
-                            scp -o StrictHostKeyChecking=no ${artifactPath} ${TARGET_USER_HOST}:${releaseDir}/
+                            scp -o StrictHostKeyChecking=no -r ./backend/dist/ ${TARGET_USER_HOST}:${releaseDir}/
                             echo "Artifact copied.";
                         """
 
