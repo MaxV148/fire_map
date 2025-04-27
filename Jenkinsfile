@@ -67,61 +67,22 @@ pipeline {
                     def currentLink = "${env.RELEASE_BASE_DIR}/${env.CURRENT_LINK_NAME}"
 
                     sshagent(credentials: [SSH_CREDENTIALS_ID]) {
-                        echo "Connecting to ${TARGET_USER_HOST}..."
 
                         // 1. Erstelle das Release-Verzeichnis auf dem Zielserver
                         sh """
-                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
-                                echo "Creating release directory ${releaseDir}..."; \
-                                mkdir -p ${releaseDir}; \
-                                echo "Directory created."; \
-                            '
-                        """
-
-                        // 2. Kopiere das Artefakt (Wheel) auf den Zielserver
-                        sh """
-                            echo "Copying artifact ${artifactName} to ${releaseDir}...";
-                            scp -o StrictHostKeyChecking=no -r ./backend/dist/* ${TARGET_USER_HOST}:${releaseDir}/
-                            echo "Artifact copied.";
-                        """
-
-                        // 3. Führe serverseitige Setup-Schritte aus
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
-                                echo "Setting up environment in ${releaseDir}..."; \
-                                cd ${releaseDir}; \
-                                \
-                                echo "Creating Python virtual environment..."; \
-                                python3 -m venv .venv; \
-                                \
-                                echo "Activating virtual environment and installing wheel..."; \
-                                source .venv/bin/activate; \
-                                pip install --quiet ${artifactName}; \
-                                deactivate; \
-                                \
-                                echo "Copying configuration files (Example)..."; \
-                                # FÜGE HIER BEFEHLE ZUM KOPIEREN VON KONFIG-DATEIEN HINZU (z.B. .env)
-                                # cp /path/to/shared/config/.env ${releaseDir}/
-                                \
-                                echo "Running database migrations (Example)..."; \
-                                # FÜGE HIER BEFEHLE FÜR DB-MIGRATIONEN HINZU (z.B. mit Alembic)
-                                # source .venv/bin/activate; \
-                                # alembic upgrade head; \
-                                # deactivate; \
-                                \
-                                echo "Server-side setup for release ${env.BUILD_NUMBER} complete."; \
-                            '
-                        """
-
-                        // 4. Aktualisiere den 'current' Symlink *atomar* auf das neue Release
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
+                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} <<EOF
+                                echo "Creating release directory ${releaseDir}..."; 
+                                mkdir -p ${releaseDir}; 
+                                scp -o StrictHostKeyChecking=no -r ./backend/dist/* ${TARGET_USER_HOST}:${releaseDir};
+                                cd ${releaseDir};
+                                python3 -m venv .venv;
+                                pip install --quiet ${artifactName};
+                                deactivate;
                                 echo "Updating symbolic link ${currentLink} -> ${releaseDir}"; \
                                 ln -sfn ${releaseDir} ${currentLink}; \
-                                echo "Symbolic link updated."; \
-                            '
+                                <<EOF
+                            
                         """
-
                         // 5. Starte den Anwendungs-Service neu
                         sh """
                             ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
