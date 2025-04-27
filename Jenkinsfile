@@ -82,6 +82,7 @@ pipeline {
                             ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} <<EOF
                                 cd ${releaseDir};
                                 python3 -m venv .venv;
+                                ls -lh
                                 pip install --quiet ${artifactName};
                                 deactivate;
                                 echo "Updating symbolic link ${currentLink} -> ${releaseDir}"; \
