@@ -73,7 +73,13 @@ pipeline {
                             ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} <<EOF
                                 echo "Creating release directory ${releaseDir}..."; 
                                 mkdir -p ${releaseDir}; 
-                                scp -o StrictHostKeyChecking=no -r ./backend/dist/* ${TARGET_USER_HOST}:${releaseDir};
+                                <<EOF
+                            """
+                        sh """ 
+                            scp -o StrictHostKeyChecking=no ${artifactPath} ${TARGET_USER_HOST}:${releaseDir};
+                        """
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} <<EOF
                                 cd ${releaseDir};
                                 python3 -m venv .venv;
                                 pip install --quiet ${artifactName};
@@ -83,21 +89,13 @@ pipeline {
                                 <<EOF
                             
                         """
-                        // 5. Starte den Anwendungs-Service neu
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} ' \
-                                echo "Restarting application service (${APP_SERVICE_NAME})..."; \
-                                # sudo systemctl restart ${APP_SERVICE_NAME}; \
-                                echo "Service restart command sent."; \
-                            '
-                        """
 
                         echo "Deployment of build ${env.BUILD_NUMBER} completed successfully."
 
-                    } // Ende sshagent
-                } // Ende script
-            } // Ende steps
-        } // Ende stage 'Deploy'
+                    } 
+                } 
+            } 
+        } 
 
 /*stage('5. Cleanup Old Releases') {
              steps {
