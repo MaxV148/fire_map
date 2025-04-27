@@ -82,6 +82,7 @@ pipeline {
                             ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} <<EOF
                                 cd ${releaseDir};
                                 python3 -m venv .venv;
+                                source .venv/bin/activate;
                                 ls -lh
                                 pip install --quiet ${artifactName};
                                 deactivate;
