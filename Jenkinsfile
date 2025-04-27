@@ -58,6 +58,8 @@ pipeline {
                     def wheel_artifacts = findFiles(glob: 'backend/dist/*.whl')
                     def artifactPath = wheel_artifacts[0].path
                     def artifactName = wheel_artifacts[0].name
+                    def python_artifact = findFiles(glob: 'backend/dist/*.tar.gz')
+                    def python_artifact_name = python_artifact[0].name
                     echo "Found artifact: ${artifactName}"
 
                     def releaseDir = "${env.RELEASES_DIR}/${env.BUILD_NUMBER}"
@@ -83,7 +85,7 @@ pipeline {
                                 pip install --quiet ${artifactName};
                                 deactivate;
                                 mkdir ${APP_FOLDER}
-                                tar -xzf ${artifactName} -C ${APP_FOLDER} --strip-components=1
+                                tar -xzf ${python_artifact_name} -C ${APP_FOLDER} --strip-components=1
                                 echo "Updating symbolic link ${currentLink} -> ${releaseDir}"; 
                                 ln -sfn ${releaseDir} ${currentLink}; 
                                 <<EOF
