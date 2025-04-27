@@ -54,13 +54,9 @@ pipeline {
         stage('4. Deploy to Server') {
             steps {
                 script {
-                    def artifactPattern = 'backend/dist/*.whl'
-                    def artifacts = findFiles(glob: artifactPattern)
-                    if (artifacts.length == 0) {
-                        error "Build artifact (.whl) not found in ${artifactPattern}"
-                    }
-                    def artifactPath = artifacts[0].path
-                    def artifactName = artifacts[0].name
+                    def wheel_artifacts = findFiles(glob: 'backend/dist/*.whl')
+                    def artifactPath = wheel_artifacts[0].path
+                    def artifactName = wheel_artifacts[0].name
                     echo "Found artifact: ${artifactName}"
 
                     def releaseDir = "${env.RELEASES_DIR}/${env.BUILD_NUMBER}"
@@ -76,18 +72,17 @@ pipeline {
                                 <<EOF
                             """
                         sh """ 
-                            scp -o StrictHostKeyChecking=no ${artifactPath} ${TARGET_USER_HOST}:${releaseDir};
+                            scp -o StrictHostKeyChecking=no backend/dist/* ${TARGET_USER_HOST}:${releaseDir};
                         """
                         sh """
                             ssh -o StrictHostKeyChecking=no ${TARGET_USER_HOST} <<EOF
                                 cd ${releaseDir};
                                 python3 -m venv .venv;
                                 source .venv/bin/activate;
-                                ls -lh
                                 pip install --quiet ${artifactName};
                                 deactivate;
-                                echo "Updating symbolic link ${currentLink} -> ${releaseDir}"; \
-                                ln -sfn ${releaseDir} ${currentLink}; \
+                                echo "Updating symbolic link ${currentLink} -> ${releaseDir}"; 
+                                ln -sfn ${releaseDir} ${currentLink}; 
                                 <<EOF
                             
                         """
