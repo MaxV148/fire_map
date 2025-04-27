@@ -13,6 +13,7 @@ pipeline {
         SSH_CREDENTIALS_ID = '5cd5330b-b9d4-45f5-8aa3-6f855d4724bc'
         TARGET_USER_HOST = 'deployer@85.215.176.31'
         APP_SERVICE_NAME = 'fastapi-fire-map'
+        APP_FOLDER = 'fire_map'
         RELEASES_TO_KEEP = 5
     }
 
@@ -81,6 +82,8 @@ pipeline {
                                 source .venv/bin/activate;
                                 pip install --quiet ${artifactName};
                                 deactivate;
+                                mkdir ${APP_FOLDER}
+                                tar -xzf ${artifactName} -C ${APP_FOLDER} --strip-components=1
                                 echo "Updating symbolic link ${currentLink} -> ${releaseDir}"; 
                                 ln -sfn ${releaseDir} ${currentLink}; 
                                 <<EOF
