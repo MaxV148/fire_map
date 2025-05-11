@@ -36,7 +36,10 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     password: Mapped[str] = mapped_column(String, nullable=False, index=True)
     role_id: Mapped[int] = mapped_column(
-        ForeignKey("role.id"), nullable=False, index=True, server_default="2"
+        ForeignKey("role.id"),
+        nullable=False,
+        index=True,
+        server_default="2",  # 2 = user role
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

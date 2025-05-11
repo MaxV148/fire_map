@@ -7,6 +7,7 @@ import qrcode
 from src.domain.user.dto import (
     UserCreate,
     Authresponse,
+    MeResponse,
     UserLogin,
     OtpVerify,
     OtpDisable,
@@ -23,6 +24,7 @@ from src.domain.user.service import (
     verify_temp_token,
 )
 from src.domain.user.dependency import get_current_user
+from loguru import logger
 
 
 user_router = APIRouter(prefix="/user")
@@ -56,12 +58,8 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
 
     return Authresponse(
-        email=new_user.email,
-        first_name=new_user.first_name,
-        last_name=new_user.last_name,
-        access_token=create_access_token({"sub": new_user.email}),
+        access_token=create_access_token({"sub": str(new_user.id)}),
         token_type="bearer",
-        id=new_user.id,
     )
 
 
@@ -83,25 +81,14 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
         # Create temporary token for second step
         temp_token = create_temp_token({"sub": user.email, "step": "2fa"})
         return Authresponse(
-            id=user.id,
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            requires_2fa=True,
-            temp_token=temp_token,
             token_type="bearer",
             access_token="",  # No access token yet, requires 2FA
         )
 
     # If no 2FA required, return full access token
     return Authresponse(
-        id=user.id,
-        email=user.email,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        access_token=create_access_token({"sub": user.email}),
+        access_token=create_access_token({"sub": str(user.id)}),
         token_type="bearer",
-        requires_2fa=False,
     )
 
 
@@ -139,13 +126,8 @@ def login_step2(login_data: LoginStep2, db: Session = Depends(get_db)):
 
         # Return full access token
         return Authresponse(
-            id=user.id,
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            access_token=create_access_token({"sub": user.email}),
+            access_token=create_access_token({"sub": user.id}),
             token_type="bearer",
-            requires_2fa=False,
         )
 
     except Exception as e:
@@ -155,18 +137,19 @@ def login_step2(login_data: LoginStep2, db: Session = Depends(get_db)):
         )
 
 
-@user_router.get("/me")
+@user_router.get("/me", response_model=MeResponse)
 def get_user_details(current_user: User = Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "first_name": current_user.first_name,
-        "last_name": current_user.last_name,
-        "created_at": current_user.created_at,
-        "otp_configured": current_user.otp_settings.otp_configured
+    return MeResponse(
+        id=current_user.id,
+        email=current_user.email,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        created_at=current_user.created_at,
+        otp_configured=current_user.otp_settings.otp_configured
         if current_user.otp_settings
         else False,
-    }
+        role=current_user.role.name,
+    )
 
 
 @user_router.post("/2fa/setup", response_class=StreamingResponse)

@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, and_
 from typing import List, Optional
 from geoalchemy2.functions import ST_GeomFromText
 from geoalchemy2.shape import to_shape
 import json
 
 from src.domain.issue.model import Issue
-from src.domain.issue.dto import IssueCreate, IssueUpdate
+from src.domain.issue.dto import IssueCreate, IssueUpdate, IssueFilter
 from src.domain.user.model import User
 from src.domain.tag.model import Tag
 
@@ -15,31 +15,22 @@ class IssueRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_location_coordinates(self, issue: Issue) -> Optional[List[float]]:
-        """Extract coordinates from a geometry point"""
-        if issue.location is None:
-            return None
-
-        point = to_shape(issue.location)
-        return [point.x, point.y]
-
     def create(
         self, issue_data: IssueCreate, current_user: Optional[User] = None
     ) -> Issue:
         """Create a new issue"""
         # Convert coordinates to PostGIS geometry if provided
-        location = None
-        if issue_data.location:
-            location = ST_GeomFromText(
-                f"POINT({issue_data.location[0]} {issue_data.location[1]})"
-            )
+        wkt_point = None
+        if issue_data.location and len(issue_data.location) >= 2:
+            lon, lat = issue_data.location[0], issue_data.location[1]
+            wkt_point = f"POINT({lon} {lat})"
 
         # Create the issue
         db_issue = Issue(
             name=issue_data.name,
             description=issue_data.description,
             created_by_user_id=current_user.id if current_user else None,
-            location=location,
+            location=ST_GeomFromText(wkt_point) if wkt_point else None,
         )
 
         # Add tags if provided
@@ -52,23 +43,29 @@ class IssueRepository:
         self.db.refresh(db_issue)
 
         # Convert location to coordinates before returning
-        db_issue.location = self.get_location_coordinates(db_issue)
         return db_issue
 
     def get_by_id(self, issue_id: int) -> Optional[Issue]:
         """Get an issue by its ID"""
         query = select(Issue).where(Issue.id == issue_id)
         result = self.db.execute(query).scalar_one_or_none()
-        if result:
-            result.location = self.get_location_coordinates(result)
         return result
 
-    def get_all(self) -> List[Issue]:
-        """Get all issues"""
+    def get_filtered_issues(self, filter: IssueFilter):
         query = select(Issue)
+        if filter.tag_ids:
+            query = query.join(Issue.tags).where(Tag.id.in_(filter.tag_ids))
+
+        conditions = []
+        if filter.start_date:
+            conditions.append(Issue.created_at >= filter.start_date)
+        if filter.end_date:
+            conditions.append(Issue.created_at <= filter.end_date)
+
+        if conditions:
+            query = query.where(and_(*conditions))
+
         result = self.db.execute(query).scalars().all()
-        for issue in result:
-            issue.location = self.get_location_coordinates(issue)
         return result
 
     def get_by_user(self, user_id: int) -> List[Issue]:
@@ -79,12 +76,11 @@ class IssueRepository:
             issue.location = self.get_location_coordinates(issue)
         return result
 
-    def get_by_tag(self, tag_id: int) -> List[Issue]:
+    def get_by_tag(self, tag_id: int):
         """Get all issues with a specific tag"""
         query = select(Issue).join(Issue.tags).where(Tag.id == tag_id)
         result = self.db.execute(query).scalars().all()
-        for issue in result:
-            issue.location = self.get_location_coordinates(issue)
+
         return result
 
     def update(self, issue_id: int, issue_data: IssueUpdate) -> Optional[Issue]:
@@ -114,8 +110,6 @@ class IssueRepository:
         self.db.commit()
         self.db.refresh(db_issue)
 
-        # Convert location to coordinates before returning
-        db_issue.location = self.get_location_coordinates(db_issue)
         return db_issue
 
     def delete(self, issue_id: int) -> bool:

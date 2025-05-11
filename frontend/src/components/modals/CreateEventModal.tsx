@@ -39,6 +39,7 @@ interface CreateEventModalProps {
   onClose: () => void;
   onSuccess?: (createdEventId: number) => void;
   initialLocation?: [number, number] | null;
+  initialFormType?: FormType;
 }
 
 export interface EventFormData {
@@ -73,8 +74,8 @@ const initialIssueFormData: IssueFormData = {
   location: null
 };
 
-const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateEventModalProps) => {
-  const [formType, setFormType] = useState<FormType>('event');
+const CreateEventModal = ({ open, onClose, onSuccess, initialLocation, initialFormType }: CreateEventModalProps) => {
+  const [formType, setFormType] = useState<FormType>(initialFormType || 'event');
   const [eventFormData, setEventFormData] = useState<EventFormData>(initialEventFormData);
   const [issueFormData, setIssueFormData] = useState<IssueFormData>(initialIssueFormData);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -122,6 +123,13 @@ const CreateEventModal = ({ open, onClose, onSuccess, initialLocation }: CreateE
       setLocationDisplayText(`[${lng.toFixed(6)}, ${lat.toFixed(6)}]`);
     }
   }, [initialLocation, open]);
+
+  // Aktualisiere formType, wenn initialFormType sich ändert
+  useEffect(() => {
+    if (initialFormType) {
+      setFormType(initialFormType);
+    }
+  }, [initialFormType]);
 
   const fetchTags = async () => {
     setIsLoadingTags(true);

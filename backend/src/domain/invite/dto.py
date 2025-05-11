@@ -25,3 +25,9 @@ class InviteResponse(BaseModel):
 class InviteList(BaseModel):
     invites: list[InviteResponse]
     count: int
+
+
+class TestEmailRequest(BaseModel):
+    email: EmailStr
+    subject: str = "Test Email"
+    body: str = "Dies ist eine Test-Email vom System"

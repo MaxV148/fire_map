@@ -17,6 +17,12 @@ services:
     ports:
       - "8000:8000"
 
+  mailserver:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025" 
+      - "8025:8025"
+
   frontend:
     build: ./frontend/.
     volumes:

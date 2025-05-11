@@ -7,6 +7,7 @@ from starlette import status
 from src.infrastructure.postgresql.db import get_db
 from src.conf.model import Settings
 from src.domain.user.model import User
+from loguru import logger
 
 settings = Settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -19,20 +20,21 @@ def get_current_user(
         payload = jwt.decode(
             token, settings.secret_key, algorithms=[settings.algorithm]
         )
-        email: str = payload.get("sub")
-        if email is None:
+        logger.info(f"Payload: {payload}")
+        id: int = int(payload.get("sub"))
+        if id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             )
-        user = db.query(User).filter(User.email == email).first()
+        user = db.query(User).filter(User.id == id).first()
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
             )
         return user
-    except PyJWTError:
+    except PyJWTError as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}"
         )
 
 

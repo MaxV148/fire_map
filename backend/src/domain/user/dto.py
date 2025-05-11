@@ -19,12 +19,16 @@ class UserLogin(BaseModel):
 class Authresponse(BaseModel):
     access_token: str
     token_type: str
+
+
+class MeResponse(BaseModel):
     id: int
     email: str
     first_name: str
     last_name: str
-    requires_2fa: bool = False
-    temp_token: Optional[str] = None
+    created_at: datetime
+    otp_configured: bool
+    role: str
 
 
 class LoginStep2(BaseModel):

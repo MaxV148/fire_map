@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import List, Annotated
 from sqlalchemy.orm import Session
 
 from src.infrastructure.postgresql.db import get_db
 from src.domain.user.dependency import get_current_user
 from src.domain.user.model import User
 from src.domain.issue.repository import IssueRepository
-from src.domain.issue.dto import IssueCreate, IssueUpdate, IssueResponse
+from src.domain.issue.dto import IssueCreate, IssueUpdate, IssueResponse, IssueFilter
 
 # Create router
 issue_router = APIRouter(prefix="/issue")
@@ -27,40 +27,19 @@ def create_issue(
 
 @issue_router.get("", response_model=List[IssueResponse])
 def get_all_issues(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
-):
-    """Get all issues"""
-    repository = IssueRepository(db)
-    return repository.get_all()
-
-
-@issue_router.get("/user/{user_id}", response_model=List[IssueResponse])
-def get_issues_by_user(
-    user_id: int,
+    filters: Annotated[IssueFilter, Query()],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    _: User = Depends(get_current_user),
 ):
-    """Get all issues created by a specific user"""
     repository = IssueRepository(db)
-    return repository.get_by_user(user_id)
-
-
-@issue_router.get("/tag/{tag_id}", response_model=List[IssueResponse])
-def get_issues_by_tag(
-    tag_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Get all issues with a specific tag"""
-    repository = IssueRepository(db)
-    return repository.get_by_tag(tag_id)
+    return repository.get_filtered_issues(filters)
 
 
 @issue_router.get("/{issue_id}", response_model=IssueResponse)
 def get_issue(
     issue_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    _: User = Depends(get_current_user),
 ):
     """Get an issue by ID"""
     repository = IssueRepository(db)
@@ -78,7 +57,7 @@ def update_issue(
     issue_id: int,
     issue_data: IssueUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    _: User = Depends(get_current_user),
 ):
     """Update an issue"""
     repository = IssueRepository(db)
@@ -95,7 +74,7 @@ def update_issue(
 def delete_issue(
     issue_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    _: User = Depends(get_current_user),
 ):
     """Delete an issue"""
     repository = IssueRepository(db)

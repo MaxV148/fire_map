@@ -844,7 +844,6 @@ const DashboardPage = ({ onLogout }: DashboardPageProps) => {
                 entities={filteredIssues.length > 0 ? filteredIssues : issues}
                 isLoading={isLoadingIssues}
                 error={issuesError}
-                title={`My Issues${filteredIssues.length > 0 && filteredIssues.length !== issues.length ? ` (Filtered: ${filteredIssues.length})` : ''}`}
                 onEntityClick={(entity) => handleEntityClick(entity as Issue)}
                 onEntityEdit={(entity) => handleEditEntity(entity as Issue)}
                 onEntityDeleted={() => handleEntityDeleted('issue')}

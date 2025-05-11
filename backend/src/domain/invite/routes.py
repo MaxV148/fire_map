@@ -1,18 +1,49 @@
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from starlette import status
+from fastapi_mail import FastMail, MessageSchema, MessageType
+from pydantic import EmailStr
 
-from src.domain.invite.dto import InviteCreate, InviteResponse, InviteList
+from src.domain.invite.dto import (
+    InviteCreate,
+    InviteResponse,
+    InviteList,
+    TestEmailRequest,
+)
 from src.domain.invite.repository import InviteRepository
 from src.domain.user.model import User
 from src.domain.user.dependency import get_current_user
 from src.infrastructure.postgresql.db import get_db
+from fastapi_mail import ConnectionConfig, FastMail
+
+
+mail_config = ConnectionConfig(
+    MAIL_USERNAME="user",
+    MAIL_PASSWORD="test",
+    MAIL_FROM="mail@mail.com",
+    MAIL_PORT=1025,
+    MAIL_SERVER="localhost",
+    MAIL_FROM_NAME="Deine App",
+    MAIL_STARTTLS=False,
+    MAIL_SSL_TLS=False,
+    USE_CREDENTIALS=False,
+    VALIDATE_CERTS=False,
+)
+
+fm = FastMail(mail_config)
 
 
 invite_router = APIRouter(prefix="/invite")
+
+
+def get_mail_client() -> FastMail:
+    """
+    Dependency to inject FastMail client
+    """
+    return fm
 
 
 @invite_router.post(
@@ -22,6 +53,7 @@ def create_invite(
     invite_data: InviteCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    mail_client: FastMail = Depends(get_mail_client),
 ):
     """
     Create a new invitation link for a user
@@ -49,6 +81,7 @@ def list_invites(
     limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),  # Ensure user is authenticated
+    mail_client: FastMail = Depends(get_mail_client),
 ):
     """
     List all invitations with pagination
@@ -65,6 +98,7 @@ def get_invite(
     invite_uuid: UUID,
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),  # Ensure user is authenticated
+    mail_client: FastMail = Depends(get_mail_client),
 ):
     """
     Get a specific invitation by UUID
@@ -84,6 +118,7 @@ def delete_invite(
     invite_uuid: UUID,
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),  # Ensure user is authenticated
+    mail_client: FastMail = Depends(get_mail_client),
 ):
     """
     Delete an invitation
@@ -100,6 +135,7 @@ def delete_invite(
 def validate_invite(
     invite_uuid: UUID,
     db: Session = Depends(get_db),
+    mail_client: FastMail = Depends(get_mail_client),
 ):
     """
     Check if an invitation is valid (exists, not used, not expired)
@@ -114,3 +150,30 @@ def validate_invite(
 
     invite = repository.get_by_uuid(invite_uuid)
     return {"valid": True, "email": invite.email, "expire_date": invite.expire_date}
+
+
+@invite_router.post("/test-email", response_model=dict)
+async def send_test_email(
+    email_data: TestEmailRequest,
+    background_tasks: BackgroundTasks,
+    mail_client: FastMail = Depends(get_mail_client),
+):
+    """
+    Sendet eine Test-E-Mail an die angegebene Adresse
+    """
+    # Message erstellen
+    message = MessageSchema(
+        subject=email_data.subject,
+        recipients=[email_data.email],
+        body=email_data.body,
+        subtype=MessageType.plain,
+    )
+
+    # E-Mail im Hintergrund senden
+    background_tasks.add_task(mail_client.send_message, message)
+
+    return {
+        "status": "success",
+        "message": f"Test-E-Mail wird an {email_data.email} gesendet",
+        "details": {"subject": email_data.subject, "body": email_data.body},
+    }

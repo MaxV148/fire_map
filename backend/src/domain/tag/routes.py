@@ -18,7 +18,6 @@ def create_tag(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Create a new tag"""
     repository = TagRepository(db)
     return repository.create(tag_data)
 

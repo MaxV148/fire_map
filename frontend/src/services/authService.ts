@@ -5,13 +5,15 @@ interface LoginCredentials {
 
 export interface UserProfile {
   id: number;
-  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  created_at: string;
+  otp_configured: boolean;
 }
 
 interface AuthResponse {
   access_token: string;
-  id: number;
-  username: string;
   token_type: string;
   requires_2fa?: boolean;
   temp_token?: string;
@@ -20,6 +22,13 @@ interface AuthResponse {
 export interface OTPVerification {
   temp_token: string;
   code: string;
+}
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
 }
 
 const TOKEN_KEY = 'token';
@@ -39,6 +48,43 @@ export const authService = {
   redirectCallback: null as (() => void) | null,
 
   /**
+   * Register a new user
+   * @param registerData - The registration data
+   * @returns Promise with the authentication response
+   */
+  register: async (registerData: RegisterData): Promise<AuthResponse> => {
+    try {
+      const response = await fetch('http://localhost:8000/v1/user/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registerData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Registrierung fehlgeschlagen');
+      }
+
+      const data: AuthResponse = await response.json();
+      
+      // Speichere Token sicher
+      localStorage.setItem(TOKEN_KEY, data.access_token);
+      
+      // Hole Benutzerdetails von /me
+      await authService.fetchUserProfile();
+      
+      // Starte Idle-Timer
+      authService.startIdleTimer();
+      
+      return data;
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
+
+  /**
    * Login with email and password
    * @param credentials - The login credentials
    * @returns Promise with the authentication response
@@ -56,24 +102,86 @@ export const authService = {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Login failed. Please check your credentials.');
-      }else{
-        window.console.log(response);
       }
 
       const data: AuthResponse = await response.json();
       
-      // Store the token and user profile
-      localStorage.setItem(TOKEN_KEY, data.access_token);
-      
-      if (data.username) {
-        const profile: UserProfile = {
-          username: data.username,
-          id: data.id
-        }
-        localStorage.setItem(USER_KEY, JSON.stringify(profile));
+      // Prüfe ob 2FA erforderlich ist
+      if (data.requires_2fa && data.temp_token) {
+        return data;
       }
       
-      // Start idle timeout tracking
+      // Speichere den Token sicher
+      localStorage.setItem(TOKEN_KEY, data.access_token);
+      
+      // Hole Benutzerdetails von /me
+      await authService.fetchUserProfile();
+      
+      // Starte Idle-Timer
+      authService.startIdleTimer();
+      
+      return data;
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
+
+  /**
+   * Fetch user profile after login
+   */
+  fetchUserProfile: async (): Promise<UserProfile> => {
+    try {
+      const response = await fetch('http://localhost:8000/v1/user/me', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem(TOKEN_KEY)}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const userProfile: UserProfile = await response.json();
+      
+      // Speichere Benutzerprofil im localStorage
+      localStorage.setItem(USER_KEY, JSON.stringify(userProfile));
+      
+      return userProfile;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return Promise.reject(error);
+    }
+  },
+
+  /**
+   * Verify OTP code for 2FA login
+   * @param verification - The OTP verification data
+   * @returns Promise with the authentication response
+   */
+  verifyOTP: async (verification: OTPVerification): Promise<AuthResponse> => {
+    try {
+      const response = await fetch('http://localhost:8000/v1/user/login/2fa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(verification),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'OTP-Verifizierung fehlgeschlagen');
+      }
+
+      const data: AuthResponse = await response.json();
+      
+      // Speichere Token sicher
+      localStorage.setItem(TOKEN_KEY, data.access_token);
+      
+      // Hole Benutzerdetails von /me
+      await authService.fetchUserProfile();
+      
+      // Starte Idle-Timer
       authService.startIdleTimer();
       
       return data;
@@ -231,61 +339,11 @@ export const authService = {
    */
   check2FAStatus: async (): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:8000/v1/user/me', {
-        headers: authService.getAuthHeader()
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user details');
-      }
-
-      const data = await response.json();
-      return data.otp_configured || false;
+      const userProfile = await authService.fetchUserProfile();
+      return userProfile.otp_configured || false;
     } catch (error) {
       console.error('Error checking 2FA status:', error);
       return false;
-    }
-  },
-
-  /**
-   * Verify OTP code for 2FA login
-   * @param verification - The OTP verification data
-   * @returns Promise with the authentication response
-   */
-  verifyOTP: async (verification: OTPVerification): Promise<AuthResponse> => {
-    try {
-      const response = await fetch('http://localhost:8000/v1/user/login/2fa', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(verification),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'OTP-Verifizierung fehlgeschlagen');
-      }
-
-      const data: AuthResponse = await response.json();
-      
-      // Speichere Token und Benutzerprofil
-      localStorage.setItem(TOKEN_KEY, data.access_token);
-      
-      if (data.username) {
-        const profile: UserProfile = {
-          username: data.username,
-          id: data.id
-        }
-        localStorage.setItem(USER_KEY, JSON.stringify(profile));
-      }
-      
-      // Starte Idle-Timer
-      authService.startIdleTimer();
-      
-      return data;
-    } catch (error) {
-      return Promise.reject(error);
     }
   },
 };

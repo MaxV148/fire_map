@@ -1,8 +1,10 @@
+import loguru
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update, delete, and_
 from typing import List, Optional
 from geoalchemy2.functions import ST_GeomFromText
 from geoalchemy2.shape import to_shape
+from geoalchemy2.elements import WKBElement
 from datetime import datetime
 
 from src.domain.event.model import Event
@@ -67,13 +69,7 @@ class EventRepository:
         result = self.db.execute(query).scalar_one_or_none()
         return result
 
-    def get_all(self) -> List[Event]:
-        """Get all events"""
-        query = select(Event)
-        result = self.db.execute(query).scalars().all()
-        return result
-
-    def get_filtered_events(self, filters: EventFilter) -> List[Event]:
+    def get_filtered_events(self, filters: EventFilter):
         """Get events with database-side filtering"""
         # Basis-Query erstellen
         query = select(Event).distinct()
@@ -95,29 +91,15 @@ class EventRepository:
         if filters.end_date:
             conditions.append(Event.created_at <= filters.end_date)
 
-        # Bedingungen zur Query hinzufügen, falls vorhanden
         if conditions:
             query = query.where(and_(*conditions))
 
-        # Query ausführen und Ergebnisse zurückgeben
         result = self.db.execute(query).scalars().all()
         return result
 
     def get_by_user(self, user_id: int) -> List[Event]:
         """Get all events created by a specific user"""
         query = select(Event).where(Event.created_by == user_id)
-        result = self.db.execute(query).scalars().all()
-        return result
-
-    def get_by_tag(self, tag_id: int) -> List[Event]:
-        """Get all events with a specific tag"""
-        query = select(Event).join(Event.tags).where(Tag.id == tag_id)
-        result = self.db.execute(query).scalars().all()
-        return result
-
-    def get_by_vehicle(self, vehicle_id: int) -> List[Event]:
-        """Get all events with a specific vehicle type"""
-        query = select(Event).join(Event.vehicles).where(VehicleType.id == vehicle_id)
         result = self.db.execute(query).scalars().all()
         return result
 
@@ -182,10 +164,10 @@ class EventRepository:
         self.db.commit()
         return True
 
-    def get_location_coordinates(self, event: Event) -> Optional[List[float]]:
-        """Extract coordinates from a geometry point"""
-        if event.location is None:
-            return None
-
-        point = to_shape(event.location)
-        return [point.x, point.y]
+    # def get_location_coordinates(self, event: Event) -> Optional[List[float]]:
+    #    """Extract coordinates from a geometry point"""
+    #    if event.location is None:
+    #        return None
+    #
+    #    point = to_shape(event.location)
+    #    return [point.x, point.y]

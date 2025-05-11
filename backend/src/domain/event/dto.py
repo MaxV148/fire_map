@@ -1,6 +1,8 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional, List, Annotated
 from datetime import datetime
+from geoalchemy2.shape import to_shape
+from shapely.geometry import mapping
 
 
 class TagResponse(BaseModel):
@@ -50,9 +52,13 @@ class EventResponse(BaseModel):
     vehicles: List[VehicleTypeResponse]
     created_by_user_id: Optional[int] = None
     created_at: datetime
-    updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    @field_validator("location", mode="before")
+    def turn_location_into_wkt(cls, value):
+        if value is None:
+            return None
+        point = to_shape(value)
+        return [float(point.x), float(point.y)]
 
 
 class EventFilter(BaseModel):

@@ -17,6 +17,7 @@ import { format, parseISO } from 'date-fns';
 import EventIcon from '@mui/icons-material/Event';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import EntityItem from './EntityItem';
+import CreateEventModal from './modals/CreateEventModal';
 
 // Define the possible entity types this component can handle
 type EntityType = 'event' | 'issue';
@@ -54,6 +55,8 @@ const EntityList = ({
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [localEntities, setLocalEntities] = useState<Entity[]>(entities);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedFormType, setSelectedFormType] = useState<'event' | 'issue'>('event');
 
   // Update local entities when the prop changes
   useEffect(() => {
@@ -125,6 +128,23 @@ const EntityList = ({
     setSnackbarOpen(false);
   };
 
+  const handleOpenModal = (type: 'event' | 'issue') => {
+    setSelectedFormType(type);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+  };
+
+  const handleEntityCreated = (entityId: number) => {
+    // Callback für nach der Erstellung einer Entität
+    if (onEntityDeleted) {
+      // Wiederverwendung des onEntityDeleted-Callbacks für die Aktualisierung der Daten
+      onEntityDeleted();
+    }
+  };
+
   // Render loading skeleton
   if (isLoading) {
     return (
@@ -179,6 +199,7 @@ const EntityList = ({
               variant="contained" 
               color="primary"
               startIcon={<EventIcon />}
+              onClick={() => handleOpenModal('event')}
             >
               Create New Event
             </Button>
@@ -188,11 +209,19 @@ const EntityList = ({
               variant="contained" 
               color="primary"
               startIcon={<FactCheckIcon />}
+              onClick={() => handleOpenModal('issue')}
             >
               Report New Issue
             </Button>
           )}
         </Paper>
+        {/* Modal-Komponente */}
+        <CreateEventModal 
+          open={modalOpen} 
+          onClose={handleCloseModal}
+          onSuccess={handleEntityCreated}
+          initialFormType={selectedFormType}
+        />
       </Box>
     );
   }
@@ -235,6 +264,14 @@ const EntityList = ({
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         message={snackbarMessage}
+      />
+      
+      {/* Modal-Komponente auch im normalen Render-Fall */}
+      <CreateEventModal 
+        open={modalOpen} 
+        onClose={handleCloseModal} 
+        onSuccess={handleEntityCreated}
+        initialFormType={selectedFormType}
       />
     </Box>
   );

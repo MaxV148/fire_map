@@ -4,7 +4,7 @@ from src.infrastructure.postgresql.db import Base
 from sqlalchemy import Integer, String, DateTime, ForeignKey, func, Table, Column
 from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.orm import mapped_column
-from geoalchemy2 import Geometry
+from geoalchemy2 import Geometry, WKBElement
 from typing import List
 
 
