@@ -24,6 +24,7 @@ from src.domain.user.service import (
     verify_temp_token,
 )
 from src.domain.user.dependency import get_current_user
+from src.domain.user.dto import JWTPayload
 from loguru import logger
 
 
@@ -57,8 +58,10 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
+    jwt_payload = JWTPayload(sub=str(new_user.id))
+
     return Authresponse(
-        access_token=create_access_token({"sub": str(new_user.id)}),
+        access_token=create_access_token(jwt_payload.model_dump()),
         token_type="bearer",
     )
 
@@ -85,9 +88,9 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
             access_token="",  # No access token yet, requires 2FA
         )
 
-    # If no 2FA required, return full access token
+    jwt_payload = JWTPayload(sub=str(user.id))
     return Authresponse(
-        access_token=create_access_token({"sub": str(user.id)}),
+        access_token=create_access_token(jwt_payload.model_dump()),
         token_type="bearer",
     )
 

@@ -1,6 +1,7 @@
 import pytest
+import jwt
 from fastapi.testclient import TestClient
-from conftest import TEST_USER_DATA
+from conftest import TEST_USER_DATA, settings
 
 
 class TestUser:
@@ -14,3 +15,16 @@ class TestUser:
         user_data = response.json()
         assert user_data["first_name"] == TEST_USER_DATA["first_name"]
         assert user_data["last_name"] == TEST_USER_DATA["last_name"]
+
+    def test_jwt_payload(self, get_auth_token):
+        # Token dekodieren
+        payload = jwt.decode(
+            get_auth_token, 
+            options={"verify_signature": False}
+        )
+        
+        # Prüfen, ob die benötigten Felder vorhanden sind
+        assert "sub" in payload
+
+        # Prüfen der Werte
+        assert payload["sub"] == "1"

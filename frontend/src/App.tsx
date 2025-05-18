@@ -1,82 +1,53 @@
-import './App.css'
-import "leaflet/dist/leaflet.css";
-import { useState, useEffect } from 'react';
-import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider, createTheme, Box } from '@mui/material';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import authService from './services/authService';
+import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-router-dom';
+import LoginPage from "./pages/LoginPage.tsx";
+import {useEffect} from "react";
+import DashBoard from "./pages/DashBoard.tsx";
+import ProfilePage from "./pages/ProfilePage.tsx";
+import UsersPage from "./pages/UsersPage.tsx";
+import {User} from './utils/types';
+import {useUserStore} from './store/userStore';
 
-function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-
-    useEffect(() => {
-        // Check if user is authenticated using the authService
-        const authenticated = authService.isAuthenticated();
-        setIsAuthenticated(authenticated);
-        
-        // Set up redirect callback for when token expires or user is inactive
-        authService.setRedirectCallback(() => {
-            setIsAuthenticated(false);
-        });
-        
-        // Start the idle timer if user is authenticated
-        if (authenticated) {
-            authService.startIdleTimer();
-        }
-        
-        // Clean up event listeners when component unmounts
-        return () => {
-            authService.stopIdleTimer();
-        };
-    }, []);
-
-    const handleLogout = () => {
-        authService.logout();
-        setIsAuthenticated(false);
-    };
-
-    const theme = createTheme({
-        palette: {
-            primary: {
-                main: '#1976d2',
-            },
-            secondary: {
-                main: '#dc004e',
-            },
-        },
-        components: {
-            MuiAppBar: {
-                styleOverrides: {
-                    root: {
-                        width: '100%',
-                        boxSizing: 'border-box',
-                    },
-                },
-            },
-        },
-    });
-
+const PrivateRoutes = ({isAuthenticated}: { isAuthenticated: boolean }) => {
     return (
-        <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                minHeight: '100vh',
-                width: '100%',
-                margin: 0,
-                padding: 0,
-                boxSizing: 'border-box'
-            }}>
-                {isAuthenticated ? (
-                    <DashboardPage onLogout={handleLogout} />
-                ) : (
-                    <LoginPage />
-                )}
-            </Box>
-        </ThemeProvider>
+        isAuthenticated ? <Outlet/> : <Navigate to='/login'/>
     )
 }
 
-export default App
+const RoleBasedRoute = ({user, allowedRoles}: { user: User, allowedRoles: string[] }) => {
+
+    if (!user) {
+        return <Navigate to="/login" replace/>;
+    }
+
+    return allowedRoles.includes(user.role) ? (
+        <Outlet/>
+    ) : (
+        <Navigate to="/unauthorized" replace/>
+    );
+};
+
+export default function App() {
+    const {isAuthenticated, user} = useUserStore();
+
+    useEffect(() => {
+
+    }, [])
+
+
+    return (
+        <Router>
+            <Routes>
+                <Route element={<PrivateRoutes isAuthenticated={isAuthenticated}/>}>
+                    <Route path='/' element={<DashBoard/>}/>
+                    <Route path='/profile' element={<ProfilePage/>}/>
+                    <Route element={<RoleBasedRoute user={user} allowedRoles={['admin']}/>}>
+                        <Route path='/user' element={<UsersPage/>}/>
+                    </Route>
+                </Route>
+                <Route path='/login' element={<LoginPage/>}/>
+            </Routes>
+        </Router>
+    )
+
+
+}

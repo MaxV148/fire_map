@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict
 
@@ -82,3 +82,6 @@ class OtpVerify(BaseModel):
 class OtpDisable(BaseModel):
     code: str
     confirm: bool = False
+
+class JWTPayload(BaseModel):
+    sub: str

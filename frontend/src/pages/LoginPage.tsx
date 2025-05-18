@@ -1,183 +1,105 @@
-import { useState } from 'react';
-import { 
-  Box, 
-  Button, 
-  TextField, 
-  Typography, 
-  Container, 
-  Paper, 
-  Avatar, 
-  CircularProgress,
-  Snackbar,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions
-} from '@mui/material';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import authService from '../services/authService';
+import React from 'react';
+import { Form, Input, Button, Card, Typography, Layout, Row, Col, message } from 'antd';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { useUserStore } from '../store/userStore';
+import { useNavigate } from 'react-router-dom';
 
-interface LoginCredentials {
+const { Title } = Typography;
+const { Content } = Layout;
+
+interface LoginFormValues {
   email: string;
   password: string;
 }
 
-const LoginPage = () => {
-  const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: '',
-    password: ''
-  });
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showOTPDialog, setShowOTPDialog] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [tempToken, setTempToken] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCredentials(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+const LoginPage: React.FC = () => {
+  const { login, isLoading } = useUserStore();
+  const navigate = useNavigate();
 
+  const handleSubmit = async (values: LoginFormValues) => {
     try {
-      const response = await authService.login(credentials);
-      
-      // Prüfe ob 2FA erforderlich ist
-      if (response.requires_2fa && response.temp_token) {
-        setTempToken(response.temp_token);
-        setShowOTPDialog(true);
-        setLoading(false);
-        return;
+      const success = await login(values.email, values.password);
+
+      if (success) {
+        message.success('Erfolgreich angemeldet!');
+        navigate('/');
+      } else {
+        message.error('Anmeldung fehlgeschlagen, bitte versuchen Sie es erneut.');
       }
-      
-      // Wenn keine 2FA erforderlich ist, lade die Seite neu
-      window.location.reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ein unbekannter Fehler ist aufgetreten');
-      setLoading(false);
-    }
-  };
-
-  const handleOTPSubmit = async () => {
-    if (!tempToken) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      await authService.verifyOTP({
-        temp_token: tempToken,
-        code: otpCode
-      });
-      
-      // Nach erfolgreicher 2FA-Verifizierung, lade die Seite neu
-      window.location.reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ungültiger OTP-Code');
-      setLoading(false);
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message || 'Anmeldung fehlgeschlagen, bitte versuchen Sie es erneut.');
+      } else {
+        message.error('Anmeldung fehlgeschlagen, bitte versuchen Sie es erneut.');
+      }
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper 
-        elevation={3}
-        sx={{
-          marginTop: 8,
-          padding: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-          <LockOutlinedIcon />
-        </Avatar>
-        <Typography component="h1" variant="h5">
-          Anmelden
-        </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="E-Mail-Adresse"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            value={credentials.email}
-            onChange={handleChange}
-            type="email"
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Passwort"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            value={credentials.password}
-            onChange={handleChange}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2, py: 1.5 }}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Anmelden'}
-          </Button>
-        </Box>
-      </Paper>
+    <Layout style={{ minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
+      <Content>
+        <Row justify="center" align="middle" style={{ minHeight: '100vh' }}>
+          <Col xs={22} sm={16} md={12} lg={8} xl={6}>
+            <Card 
+              style={{ 
+                width: '100%', 
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' 
+              }}
+            >
+              <Title level={2} style={{ textAlign: 'center', marginBottom: 30 }}>
+                Anmeldung
+              </Title>
+              
+              <Form
+                name="login"
+                initialValues={{ remember: true }}
+                onFinish={handleSubmit}
+                layout="vertical"
+                size="large"
+              >
+                <Form.Item
+                  name="email"
+                  rules={[
+                    { required: true, message: 'Bitte geben Sie Ihre E-Mail-Adresse ein!' },
+                    { type: 'email', message: 'Bitte geben Sie eine gültige E-Mail-Adresse ein!' }
+                  ]}
+                >
+                  <Input 
+                    prefix={<UserOutlined />} 
+                    placeholder="E-Mail-Adresse" 
+                    autoComplete="email"
+                  />
+                </Form.Item>
 
-      {/* OTP Dialog */}
-      <Dialog open={showOTPDialog} onClose={() => setShowOTPDialog(false)}>
-        <DialogTitle>Zwei-Faktor-Authentifizierung</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Bitte geben Sie den Code aus Ihrer Authenticator-App ein:
-          </DialogContentText>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="OTP Code"
-            type="text"
-            fullWidth
-            value={otpCode}
-            onChange={(e) => setOtpCode(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowOTPDialog(false)}>Abbrechen</Button>
-          <Button onClick={handleOTPSubmit} variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : 'Verifizieren'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                <Form.Item
+                  name="password"
+                  rules={[{ required: true, message: 'Bitte geben Sie Ihr Passwort ein!' }]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined />}
+                    placeholder="Passwort"
+                    autoComplete="current-password"
+                  />
+                </Form.Item>
 
-      <Snackbar 
-        open={!!error} 
-        autoHideDuration={6000} 
-        onClose={() => setError(null)}
-      >
-        <Alert onClose={() => setError(null)} severity="error">
-          {error}
-        </Alert>
-      </Snackbar>
-    </Container>
+                <Form.Item>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit" 
+                    loading={isLoading} 
+                    block
+                  >
+                    Anmelden
+                  </Button>
+                </Form.Item>
+              </Form>
+            </Card>
+          </Col>
+        </Row>
+      </Content>
+    </Layout>
   );
 };
 

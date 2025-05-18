@@ -10,6 +10,7 @@ export interface UserProfile {
   last_name: string;
   created_at: string;
   otp_configured: boolean;
+  role: string;
 }
 
 interface AuthResponse {
