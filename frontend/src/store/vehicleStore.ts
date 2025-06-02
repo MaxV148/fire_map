@@ -1,14 +1,14 @@
 import { VehicleType } from '../utils/types';
 import { create } from 'zustand';
-import { BASE_URL, TOKEN_LOCAL_STORAGE } from '../utils/constants';
+import { BASE_URL } from '../utils/constants';
 
 interface VehicleStore {
     vehicles: VehicleType[];
     isLoading: boolean;
     error: string | null;
     fetchVehicles: () => Promise<void>;
-    createVehicle: (name: string) => Promise<VehicleType>;
-    updateVehicle: (vehicleId: number, name: string) => Promise<VehicleType>;
+    createVehicle: (vehicleData: { name: string }) => Promise<VehicleType>;
+    updateVehicle: (vehicleId: number, vehicleData: { name?: string }) => Promise<VehicleType>;
     deleteVehicle: (vehicleId: number) => Promise<void>;
     setVehicles: (vehicles: VehicleType[]) => void;
     clearVehicles: () => void;
@@ -21,128 +21,105 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
 
     fetchVehicles: async () => {
         set({ isLoading: true, error: null });
-
         try {
-            const res = await fetch(BASE_URL + '/v1/vehicle', {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_LOCAL_STORAGE)}`
-                }
+            const response = await fetch(`${BASE_URL}/v1/vehicle`, {
+                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP-Fehler: ${res.status}`);
+            if (!response.ok) {
+                throw new Error('Fehler beim Laden der Fahrzeugtypen');
             }
 
-            const data: VehicleType[] = await res.json();
-            set({ vehicles: data, isLoading: false });
+            const vehicles: VehicleType[] = await response.json();
+            set({ vehicles, isLoading: false });
         } catch (error: any) {
-            set({
-                error: error.message || 'Fehler beim Laden der Fahrzeugtypen',
-                isLoading: false,
-            });
+            set({ error: error.message, isLoading: false });
         }
     },
 
-    createVehicle: async (name: string) => {
+    createVehicle: async (vehicleData) => {
         set({ isLoading: true, error: null });
-
         try {
-            const res = await fetch(`${BASE_URL}/v1/vehicle`, {
+            const response = await fetch(`${BASE_URL}/v1/vehicle`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_LOCAL_STORAGE)}`
                 },
-                body: JSON.stringify({ name })
+                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
+                body: JSON.stringify(vehicleData),
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP-Fehler: ${res.status}`);
+            if (!response.ok) {
+                throw new Error('Fehler beim Erstellen des Fahrzeugtyps');
             }
 
-            const newVehicle: VehicleType = await res.json();
-            
-            // Füge den neuen Fahrzeugtyp zur Liste hinzu
-            const currentVehicles = get().vehicles;
-            set({ vehicles: [...currentVehicles, newVehicle], isLoading: false });
-            
+            const newVehicle: VehicleType = await response.json();
+            set(state => ({
+                vehicles: [...state.vehicles, newVehicle],
+                isLoading: false
+            }));
+
             return newVehicle;
         } catch (error: any) {
-            set({
-                error: error.message || 'Fehler beim Erstellen des Fahrzeugtyps',
-                isLoading: false,
-            });
+            set({ error: error.message, isLoading: false });
             throw error;
         }
     },
 
-    updateVehicle: async (vehicleId: number, name: string) => {
+    updateVehicle: async (vehicleId, vehicleData) => {
         set({ isLoading: true, error: null });
-
         try {
-            const res = await fetch(`${BASE_URL}/v1/vehicle/${vehicleId}`, {
+            const response = await fetch(`${BASE_URL}/v1/vehicle/${vehicleId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_LOCAL_STORAGE)}`
                 },
-                body: JSON.stringify({ name })
+                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
+                body: JSON.stringify(vehicleData),
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP-Fehler: ${res.status}`);
+            if (!response.ok) {
+                throw new Error('Fehler beim Aktualisieren des Fahrzeugtyps');
             }
 
-            const updatedVehicle: VehicleType = await res.json();
+            const updatedVehicle: VehicleType = await response.json();
             
-            // Aktualisiere den Fahrzeugtyp in der Liste
-            const currentVehicles = get().vehicles;
-            const updatedVehicles = currentVehicles.map(vehicle => 
-                vehicle.id === vehicleId ? updatedVehicle : vehicle
-            );
-            
-            set({ vehicles: updatedVehicles, isLoading: false });
+            set(state => ({
+                vehicles: state.vehicles.map(vehicle => 
+                    vehicle.id === vehicleId ? updatedVehicle : vehicle
+                ),
+                isLoading: false
+            }));
+
             return updatedVehicle;
         } catch (error: any) {
-            set({
-                error: error.message || 'Fehler beim Aktualisieren des Fahrzeugtyps',
-                isLoading: false,
-            });
+            set({ error: error.message, isLoading: false });
             throw error;
         }
     },
 
-    deleteVehicle: async (vehicleId: number) => {
+    deleteVehicle: async (vehicleId) => {
         set({ isLoading: true, error: null });
-
         try {
-            const res = await fetch(`${BASE_URL}/v1/vehicle/${vehicleId}`, {
+            const response = await fetch(`${BASE_URL}/v1/vehicle/${vehicleId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_LOCAL_STORAGE)}`
-                }
+                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP-Fehler: ${res.status}`);
+            if (!response.ok) {
+                throw new Error('Fehler beim Löschen des Fahrzeugtyps');
             }
 
-            // Entferne den Fahrzeugtyp aus der Liste
-            const currentVehicles = get().vehicles;
-            const updatedVehicles = currentVehicles.filter(vehicle => vehicle.id !== vehicleId);
-            
-            set({ vehicles: updatedVehicles, isLoading: false });
+            set(state => ({
+                vehicles: state.vehicles.filter(vehicle => vehicle.id !== vehicleId),
+                isLoading: false
+            }));
         } catch (error: any) {
-            set({
-                error: error.message || 'Fehler beim Löschen des Fahrzeugtyps',
-                isLoading: false,
-            });
+            set({ error: error.message, isLoading: false });
             throw error;
         }
     },
 
-    setVehicles: (vehicles: VehicleType[]) => set({ vehicles }),
+    setVehicles: (vehicles) => set({ vehicles }),
     clearVehicles: () => set({ vehicles: [] }),
 }));

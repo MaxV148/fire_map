@@ -35,6 +35,7 @@ const NavBase: React.FC<NavBaseProps> = ({content}) => {
             <Layout.Sider
                 collapsible={true}
                 breakpoint="lg"
+                style={{minHeight: '100vh', minWidth: '100vw'}}
                 theme="dark"
                 collapsed={collapsed}
                 onCollapse={(...args) => {

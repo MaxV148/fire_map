@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.infrastructure.postgresql.db import Base
+from infrastructure.postgresql.db import Base
 from sqlalchemy import Integer, String, DateTime, func, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.orm import mapped_column
@@ -39,7 +39,7 @@ class User(Base):
         ForeignKey("role.id"),
         nullable=False,
         index=True,
-        server_default="2",  # 2 = user role
+        server_default="1",  # 2 = user role
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

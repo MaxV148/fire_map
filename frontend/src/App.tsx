@@ -6,6 +6,7 @@ import ProfilePage from "./pages/ProfilePage.tsx";
 import UsersPage from "./pages/UsersPage.tsx";
 import {User} from './utils/types';
 import {useUserStore} from './store/userStore';
+import {Spin} from 'antd';
 
 const PrivateRoutes = ({isAuthenticated}: { isAuthenticated: boolean }) => {
     return (
@@ -13,9 +14,10 @@ const PrivateRoutes = ({isAuthenticated}: { isAuthenticated: boolean }) => {
     )
 }
 
-const RoleBasedRoute = ({user, allowedRoles}: { user: User, allowedRoles: string[] }) => {
+const RoleBasedRoute = ({user, allowedRoles}: { user: User | null, allowedRoles: string[] }) => {
 
     if (!user) {
+        console.log("User is not authenticated");
         return <Navigate to="/login" replace/>;
     }
 
@@ -27,12 +29,26 @@ const RoleBasedRoute = ({user, allowedRoles}: { user: User, allowedRoles: string
 };
 
 export default function App() {
-    const {isAuthenticated, user} = useUserStore();
+    const {isAuthenticated, user, rehydrate, isLoading} = useUserStore();
 
     useEffect(() => {
+        // Beim App-Start prüfen ob der Nutzer noch angemeldet ist
+        rehydrate();
+    }, [rehydrate])
 
-    }, [])
-
+    // Während der Session-Prüfung einen Spinner anzeigen
+    if (isLoading) {
+        return (
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '100vh' 
+            }}>
+                <Spin size="large" />
+            </div>
+        );
+    }
 
     return (
         <Router>

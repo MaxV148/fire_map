@@ -2,11 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
 
-from src.infrastructure.postgresql.db import get_db
-from src.domain.user.dependency import get_current_user
-from src.domain.user.model import User
-from src.domain.tag.repository import TagRepository
-from src.domain.tag.dto import TagCreate, TagUpdate, TagResponse
+from infrastructure.postgresql.db import get_db
+from domain.user.model import User
+from domain.tag.repository import TagRepository
+from domain.tag.dto import TagCreate, TagUpdate, TagResponse
 
 # Create router
 tag_router = APIRouter(prefix="/tag")
@@ -16,16 +15,13 @@ tag_router = APIRouter(prefix="/tag")
 def create_tag(
     tag_data: TagCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     repository = TagRepository(db)
     return repository.create(tag_data)
 
 
 @tag_router.get("", response_model=List[TagResponse])
-def get_all_tags(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
-):
+def get_all_tags(db: Session = Depends(get_db)):
     """Get all tags"""
     repository = TagRepository(db)
     return repository.get_all()
@@ -35,7 +31,6 @@ def get_all_tags(
 def get_tag(
     tag_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get a tag by ID"""
     repository = TagRepository(db)
@@ -52,7 +47,6 @@ def get_tag(
 def get_tag_by_name(
     name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get a tag by name"""
     repository = TagRepository(db)
@@ -70,7 +64,6 @@ def update_tag(
     tag_id: int,
     tag_data: TagUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Update a tag"""
     repository = TagRepository(db)
@@ -87,7 +80,6 @@ def update_tag(
 def delete_tag(
     tag_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Delete a tag"""
     repository = TagRepository(db)

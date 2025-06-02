@@ -1,8 +1,8 @@
 from logging.config import fileConfig
-import os
-import sys
+
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from config.config_provider import get_config
 
 from alembic import context
 
@@ -10,17 +10,30 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
-# Import settings to get database credentials
-from src.conf.model import Settings
 
-settings = Settings()
+from domain.user.model import *
+from domain.role.model import *
+from domain.event.model import *
+from domain.issue.model import *
+from domain.tag.model import *
+from domain.vehicletype.model import *
+from domain.invite.model import *
+from infrastructure.postgresql.db import Base
 
+target_metadata = Base.metadata
+
+conf_provider = get_config()
 
 config.set_main_option(
     "sqlalchemy.url",
-    f"postgresql+psycopg://{settings.db_user}:{settings.db_password}@localhost:5432/{settings.db_name}",
+    f"postgresql+psycopg://{conf_provider.db_user}:{conf_provider.db_password}@{conf_provider.db_host}:{conf_provider.db_port}/{conf_provider.db_name}",
 )
+
 
 EXCLUDED_TABLES = {
     "spatial_ref_sys",
@@ -69,24 +82,6 @@ def include_object(object, name, type_, reflected, compare_to):
         return False
     return True
 
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
-
-# add your model's MetaData object here
-# for 'autogenerate' support
-from src.domain.user.model import *
-from src.domain.role.model import *
-from src.domain.event.model import *
-from src.domain.issue.model import *
-from src.domain.tag.model import *
-from src.domain.vehicletype.model import *
-from src.domain.invite.model import *
-from src.infrastructure.postgresql.db import Base
-
-target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

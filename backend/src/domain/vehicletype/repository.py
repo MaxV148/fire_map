@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, update, delete
 from typing import List, Optional
 
-from src.domain.vehicletype.model import VehicleType
-from src.domain.vehicletype.dto import VehicleTypeCreate, VehicleTypeUpdate
+from domain.vehicletype.model import VehicleType
+from domain.vehicletype.dto import VehicleTypeCreate, VehicleTypeUpdate
 
 
 class VehicleTypeRepository:

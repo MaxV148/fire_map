@@ -1,11 +1,10 @@
 import { User } from '../utils/types';
 import { create } from 'zustand';
-import { TOKEN_LOCAL_STORAGE, BASE_URL} from "../utils/constants.ts";
+import { BASE_URL} from "../utils/constants.ts";
 
 
 interface UserStore {
     user: User | null;
-    token: string | null;
     isAdmin: boolean;
     isAuthenticated: boolean;
     isLoading: boolean;
@@ -13,38 +12,33 @@ interface UserStore {
     rehydrate: () => Promise<void>;
     login: (email: string, password: string) => Promise<boolean>;
     logout: () => void;
-    fetchMe: (token: string) => Promise<void>;
+    fetchMe: () => Promise<void>;
 }
 
 export const useUserStore = create<UserStore>((set) => ({
     user: null,
-    token: null,
     isAdmin: false,
     isAuthenticated: false,
-    isLoading: false,
+    isLoading: true,
     error: null,
 
     login: async (email, password) => {
         set({ isLoading: true, error: null });
 
         try {
-            // Step 1: Login + Token holen
-            const res = await fetch(BASE_URL + '/v1/user/login', {
+            // Session-basierter Login über /auth/login
+            const res = await fetch(BASE_URL + '/v1/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
+                credentials: 'include', // Wichtig für Cookies
             });
 
             if (!res.ok) throw new Error('Login fehlgeschlagen');
 
-            const data: { access_token: string; token_type: string } = await res.json();
-            const token = data.access_token;
-
-            // Step 2: Userdaten via /me abrufen
+            // Nach erfolgreichem Login Userdaten via /me abrufen
             const meRes = await fetch(BASE_URL + '/v1/user/me', {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
             });
 
             if (!meRes.ok) throw new Error('Benutzerdaten konnten nicht geladen werden');
@@ -54,42 +48,47 @@ export const useUserStore = create<UserStore>((set) => ({
             // Zustand setzen
             set({
                 user,
-                token,
                 isAuthenticated: true,
                 isAdmin: user.role === 'admin',
                 isLoading: false,
             });
 
-            localStorage.setItem(TOKEN_LOCAL_STORAGE, token);
             return true;
         } catch (error: any) {
             set({
                 error: error.message || 'Unbekannter Fehler',
                 isLoading: false,
                 user: null,
-                token: null,
                 isAuthenticated: false,
             });
             return false;
         }
     },
 
-    logout: () => {
-        set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            error: null,
-        });
-        localStorage.removeItem(TOKEN_LOCAL_STORAGE);
+    logout: async () => {
+        try {
+            // Session serverseitig beenden
+            await fetch(BASE_URL + '/v1/auth/logout', {
+                method: 'POST',
+                credentials: 'include',
+            });
+        } catch (error) {
+            // Auch bei Fehlern den lokalen Zustand zurücksetzen
+            console.error('Logout-Fehler:', error);
+        } finally {
+            // Lokalen Zustand zurücksetzen
+            set({
+                user: null,
+                isAuthenticated: false,
+                error: null,
+            });
+        }
     },
 
-    fetchMe: async (token) => {
+    fetchMe: async () => {
         try {
             const res = await fetch(BASE_URL + '/v1/user/me', {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                credentials: 'include', 
             });
 
             if (!res.ok) throw new Error('Fehler beim Abrufen von /me');
@@ -98,24 +97,37 @@ export const useUserStore = create<UserStore>((set) => ({
 
             set({
                 user,
-                token,
                 isAuthenticated: true,
+                isAdmin: user.role === 'admin',
             });
         } catch (err: any) {
             set({
                 user: null,
-                token: null,
                 isAuthenticated: false,
                 error: err.message || 'Fehler bei /me',
             });
-            localStorage.removeItem(TOKEN_LOCAL_STORAGE);
         }
     },
+    
     rehydrate: async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
+        // Bei Session-basierter Auth prüfen wir den /me Endpoint
+        // um zu testen ob eine Session noch gültig ist
         set({ isLoading: true });
-        await useUserStore.getState().fetchMe(token);
+        
+        try {
+            await useUserStore.getState().fetchMe();
+            // Wenn fetchMe erfolgreich ist, ist die Session gültig
+            // isAuthenticated wird bereits in fetchMe auf true gesetzt
+        } catch (error) {
+            // Wenn fetchMe fehlschlägt, ist die Session ungültig
+            set({
+                user: null,
+                isAuthenticated: false,
+                isAdmin: false,
+                error: null,
+            });
+        } finally {
+            set({ isLoading: false });
+        }
     },
 }));

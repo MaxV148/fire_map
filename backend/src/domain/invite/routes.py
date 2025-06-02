@@ -7,16 +7,14 @@ from starlette import status
 from fastapi_mail import FastMail, MessageSchema, MessageType
 from pydantic import EmailStr
 
-from src.domain.invite.dto import (
+from domain.invite.dto import (
     InviteCreate,
     InviteResponse,
     InviteList,
     TestEmailRequest,
 )
-from src.domain.invite.repository import InviteRepository
-from src.domain.user.model import User
-from src.domain.user.dependency import get_current_user
-from src.infrastructure.postgresql.db import get_db
+from domain.invite.repository import InviteRepository
+from infrastructure.postgresql.db import get_db
 from fastapi_mail import ConnectionConfig, FastMail
 
 
@@ -46,33 +44,32 @@ def get_mail_client() -> FastMail:
     return fm
 
 
-@invite_router.post(
-    "", response_model=InviteResponse, status_code=status.HTTP_201_CREATED
-)
-def create_invite(
-    invite_data: InviteCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    mail_client: FastMail = Depends(get_mail_client),
-):
-    """
-    Create a new invitation link for a user
-    """
-    # Initialize repository
-    repository = InviteRepository(db)
-
-    # Check if there's already a valid invite for this email
-    existing_invite = repository.get_by_email(invite_data.email)
-    if existing_invite:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="An active invitation already exists for this email",
-        )
-
-    # Create new invite
-    invite = repository.create(invite_data, current_user.id)
-
-    return invite
+# @invite_router.post(
+#     "", response_model=InviteResponse, status_code=status.HTTP_201_CREATED
+# )
+# def create_invite(
+#     invite_data: InviteCreate,
+#     db: Session = Depends(get_db),
+#     mail_client: FastMail = Depends(get_mail_client),
+# ):
+#     """
+#     Create a new invitation link for a user
+#     """
+#     # Initialize repository
+#     repository = InviteRepository(db)
+#
+#     # Check if there's already a valid invite for this email
+#     existing_invite = repository.get_by_email(invite_data.email)
+#     if existing_invite:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="An active invitation already exists for this email",
+#         )
+#
+#     # Create new invite
+#     invite = repository.create(invite_data, current_user.id)
+#
+#     return invite
 
 
 @invite_router.get("", response_model=InviteList)
@@ -80,7 +77,6 @@ def list_invites(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),  # Ensure user is authenticated
     mail_client: FastMail = Depends(get_mail_client),
 ):
     """
@@ -97,7 +93,6 @@ def list_invites(
 def get_invite(
     invite_uuid: UUID,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),  # Ensure user is authenticated
     mail_client: FastMail = Depends(get_mail_client),
 ):
     """
@@ -117,7 +112,6 @@ def get_invite(
 def delete_invite(
     invite_uuid: UUID,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),  # Ensure user is authenticated
     mail_client: FastMail = Depends(get_mail_client),
 ):
     """

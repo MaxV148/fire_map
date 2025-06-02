@@ -5,10 +5,10 @@ from geoalchemy2.functions import ST_GeomFromText
 from geoalchemy2.shape import to_shape
 import json
 
-from src.domain.issue.model import Issue
-from src.domain.issue.dto import IssueCreate, IssueUpdate, IssueFilter
-from src.domain.user.model import User
-from src.domain.tag.model import Tag
+from domain.issue.model import Issue
+from domain.issue.dto import IssueCreate, IssueUpdate, IssueFilter
+from domain.user.model import User
+from domain.tag.model import Tag
 
 
 class IssueRepository:

@@ -1,12 +1,14 @@
 import { Issue, Tag } from '../utils/types';
 import { create } from 'zustand';
-import { BASE_URL, TOKEN_LOCAL_STORAGE } from '../utils/constants';
+import { BASE_URL } from '../utils/constants';
 
 interface IssueUpdateInput {
     name?: string;
     description?: string;
-    location?: number[];
+    location?: [number, number];
     tag_ids?: number[];
+    status?: string;
+    severity?: string;
 }
 
 interface IssueStore {
@@ -14,7 +16,14 @@ interface IssueStore {
     isLoading: boolean;
     error: string | null;
     fetchIssues: () => Promise<void>;
-    createIssue: (issueData: { name: string; description: string; location: number[]; tag_ids: number[] }) => Promise<Issue>;
+    createIssue: (issueData: {
+        name: string;
+        description: string;
+        location: [number, number];
+        tag_ids: number[];
+        status: string;
+        severity: string;
+    }) => Promise<Issue>;
     updateIssue: (issueId: number, issueData: IssueUpdateInput) => Promise<Issue>;
     deleteIssue: (issueId: number) => Promise<void>;
     setIssues: (issues: Issue[]) => void;
@@ -28,128 +37,105 @@ export const useIssueStore = create<IssueStore>((set, get) => ({
 
     fetchIssues: async () => {
         set({ isLoading: true, error: null });
-
         try {
-            const res = await fetch(BASE_URL + '/v1/issue', {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_LOCAL_STORAGE)}`
-                }
+            const response = await fetch(`${BASE_URL}/v1/issue`, {
+                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP-Fehler: ${res.status}`);
+            if (!response.ok) {
+                throw new Error('Fehler beim Laden der Issues');
             }
 
-            const data: Issue[] = await res.json();
-            set({ issues: data, isLoading: false });
+            const issues: Issue[] = await response.json();
+            set({ issues, isLoading: false });
         } catch (error: any) {
-            set({
-                error: error.message || 'Fehler beim Laden der Issues',
-                isLoading: false,
-            });
+            set({ error: error.message, isLoading: false });
         }
     },
 
     createIssue: async (issueData) => {
         set({ isLoading: true, error: null });
-
         try {
-            const res = await fetch(`${BASE_URL}/v1/issue`, {
+            const response = await fetch(`${BASE_URL}/v1/issue`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_LOCAL_STORAGE)}`
                 },
-                body: JSON.stringify(issueData)
+                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
+                body: JSON.stringify(issueData),
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP-Fehler: ${res.status}`);
+            if (!response.ok) {
+                throw new Error('Fehler beim Erstellen des Issues');
             }
 
-            const newIssue: Issue = await res.json();
-            
-            // Füge das neue Issue zur Liste hinzu
-            const currentIssues = get().issues;
-            set({ issues: [...currentIssues, newIssue], isLoading: false });
-            
+            const newIssue: Issue = await response.json();
+            set(state => ({
+                issues: [...state.issues, newIssue],
+                isLoading: false
+            }));
+
             return newIssue;
         } catch (error: any) {
-            set({
-                error: error.message || 'Fehler beim Erstellen des Issues',
-                isLoading: false,
-            });
+            set({ error: error.message, isLoading: false });
             throw error;
         }
     },
 
-    updateIssue: async (issueId: number, issueData: IssueUpdateInput) => {
+    updateIssue: async (issueId, issueData) => {
         set({ isLoading: true, error: null });
-
         try {
-            const res = await fetch(`${BASE_URL}/v1/issue/${issueId}`, {
+            const response = await fetch(`${BASE_URL}/v1/issue/${issueId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_LOCAL_STORAGE)}`
                 },
-                body: JSON.stringify(issueData)
+                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
+                body: JSON.stringify(issueData),
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP-Fehler: ${res.status}`);
+            if (!response.ok) {
+                throw new Error('Fehler beim Aktualisieren des Issues');
             }
 
-            const updatedIssue: Issue = await res.json();
+            const updatedIssue: Issue = await response.json();
             
-            // Aktualisiere das Issue in der Liste
-            const currentIssues = get().issues;
-            const updatedIssues = currentIssues.map(issue => 
-                issue.id === issueId ? updatedIssue : issue
-            );
-            
-            set({ issues: updatedIssues, isLoading: false });
+            set(state => ({
+                issues: state.issues.map(issue => 
+                    issue.id === issueId ? updatedIssue : issue
+                ),
+                isLoading: false
+            }));
+
             return updatedIssue;
         } catch (error: any) {
-            set({
-                error: error.message || 'Fehler beim Aktualisieren des Issues',
-                isLoading: false,
-            });
+            set({ error: error.message, isLoading: false });
             throw error;
         }
     },
 
-    deleteIssue: async (issueId: number) => {
+    deleteIssue: async (issueId) => {
         set({ isLoading: true, error: null });
-
         try {
-            const res = await fetch(`${BASE_URL}/v1/issue/${issueId}`, {
+            const response = await fetch(`${BASE_URL}/v1/issue/${issueId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem(TOKEN_LOCAL_STORAGE)}`
-                }
+                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP-Fehler: ${res.status}`);
+            if (!response.ok) {
+                throw new Error('Fehler beim Löschen des Issues');
             }
 
-            // Entferne das Issue aus der Liste
-            const currentIssues = get().issues;
-            const updatedIssues = currentIssues.filter(issue => issue.id !== issueId);
-            
-            set({ issues: updatedIssues, isLoading: false });
+            set(state => ({
+                issues: state.issues.filter(issue => issue.id !== issueId),
+                isLoading: false
+            }));
         } catch (error: any) {
-            set({
-                error: error.message || 'Fehler beim Löschen des Issues',
-                isLoading: false,
-            });
+            set({ error: error.message, isLoading: false });
             throw error;
         }
     },
 
-    setIssues: (issues: Issue[]) => set({ issues }),
+    setIssues: (issues) => set({ issues }),
     clearIssues: () => set({ issues: [] }),
 }));

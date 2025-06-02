@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, Layout, Row, Col, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useUserStore } from '../store/userStore';
@@ -15,8 +15,15 @@ interface LoginFormValues {
 
 
 const LoginPage: React.FC = () => {
-  const { login, isLoading } = useUserStore();
+  const { login, isLoading, isAuthenticated } = useUserStore();
   const navigate = useNavigate();
+
+  // Automatische Weiterleitung wenn authentifiziert
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (values: LoginFormValues) => {
     try {
@@ -24,7 +31,7 @@ const LoginPage: React.FC = () => {
 
       if (success) {
         message.success('Erfolgreich angemeldet!');
-        navigate('/');
+        // Navigation wird automatisch durch useEffect ausgelöst
       } else {
         message.error('Anmeldung fehlgeschlagen, bitte versuchen Sie es erneut.');
       }

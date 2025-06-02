@@ -1,15 +1,17 @@
 import loguru
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from datetime import datetime
 from geoalchemy2.elements import WKBElement, WKTElement
 
-from src.infrastructure.postgresql.db import get_db
-from src.domain.user.dependency import get_current_user, is_admin
-from src.domain.user.model import User
-from src.domain.event.repository import EventRepository
-from src.domain.event.dto import EventCreate, EventUpdate, EventResponse, EventFilter
+from infrastructure.postgresql.db import get_db
+from domain.user.dependency import is_admin
+from domain.user.model import User
+from domain.event.repository import EventRepository
+from domain.event.dto import EventCreate, EventUpdate, EventResponse, EventFilter
+
+from domain.user.repository import UserRepository
 
 # Create router
 event_router = APIRouter(prefix="/event")
@@ -20,12 +22,12 @@ event_router = APIRouter(prefix="/event")
 )
 def create_event(
     event_data: EventCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     repository = EventRepository(db)
-    event = repository.create(event_data, current_user)
-
+    loguru.logger.info(f"Event data: {request.state.user.first_name}")
+    event = repository.create(event_data, request.state.user)
     return event
 
 
@@ -33,7 +35,6 @@ def create_event(
 def get_all_events(
     filters: Annotated[EventFilter, Query()],
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
 ):
     """Get all events with optional filtering"""
     repository = EventRepository(db)
@@ -48,7 +49,6 @@ def get_all_events(
 def get_event(
     event_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get an event by ID"""
     repository = EventRepository(db)
@@ -70,9 +70,10 @@ def get_event(
 def update_event(
     event_id: int,
     event_data: EventUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
+    current_user = request.state.user
     """Update an event"""
     repository = EventRepository(db)
 
@@ -99,11 +100,13 @@ def update_event(
 @event_router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_event(
     event_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Delete an event"""
     repository = EventRepository(db)
+    user_repo = UserRepository(db)
+    current_user = user_repo.get_user_by_id(request.state.user_id)
 
     # Zuerst prüfen, ob das Event existiert
     event = repository.get_by_id(event_id)

@@ -2,11 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
 
-from src.infrastructure.postgresql.db import get_db
-from src.domain.user.dependency import get_current_user
-from src.domain.user.model import User
-from src.domain.role.repository import RoleRepository
-from src.domain.role.dto import RoleCreate, RoleUpdate, RoleResponse
+from infrastructure.postgresql.db import get_db
+from domain.user.model import User
+from domain.role.repository import RoleRepository
+from domain.role.dto import RoleCreate, RoleUpdate, RoleResponse
 
 # Create router
 role_router = APIRouter(prefix="/role")
@@ -16,7 +15,6 @@ role_router = APIRouter(prefix="/role")
 def create_role(
     role_data: RoleCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Create a new role"""
     repository = RoleRepository(db)
@@ -24,20 +22,14 @@ def create_role(
 
 
 @role_router.get("", response_model=List[RoleResponse])
-def get_all_roles(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
-):
+def get_all_roles(db: Session = Depends(get_db)):
     """Get all roles"""
     repository = RoleRepository(db)
     return repository.get_all()
 
 
 @role_router.get("/{role_id}", response_model=RoleResponse)
-def get_role(
-    role_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
+def get_role(role_id: int, db: Session = Depends(get_db)):
     """Get a role by ID"""
     repository = RoleRepository(db)
     role = repository.get_by_id(role_id)
@@ -54,7 +46,6 @@ def update_role(
     role_id: int,
     role_data: RoleUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Update a role"""
     repository = RoleRepository(db)
@@ -71,7 +62,6 @@ def update_role(
 def delete_role(
     role_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Delete a role"""
     repository = RoleRepository(db)

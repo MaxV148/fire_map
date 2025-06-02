@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from typing import List, Annotated
 from sqlalchemy.orm import Session
 
-from src.infrastructure.postgresql.db import get_db
-from src.domain.user.dependency import get_current_user
-from src.domain.user.model import User
-from src.domain.issue.repository import IssueRepository
-from src.domain.issue.dto import IssueCreate, IssueUpdate, IssueResponse, IssueFilter
+from infrastructure.postgresql.db import get_db
+from domain.user.model import User
+from domain.issue.repository import IssueRepository
+from domain.issue.dto import IssueCreate, IssueUpdate, IssueResponse, IssueFilter
 
 # Create router
 issue_router = APIRouter(prefix="/issue")
@@ -17,11 +16,12 @@ issue_router = APIRouter(prefix="/issue")
 )
 def create_issue(
     issue_data: IssueCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Create a new issue"""
     repository = IssueRepository(db)
+    current_user = request.state.user
     return repository.create(issue_data, current_user)
 
 
@@ -29,7 +29,6 @@ def create_issue(
 def get_all_issues(
     filters: Annotated[IssueFilter, Query()],
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
 ):
     repository = IssueRepository(db)
     return repository.get_filtered_issues(filters)
@@ -39,7 +38,6 @@ def get_all_issues(
 def get_issue(
     issue_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
 ):
     """Get an issue by ID"""
     repository = IssueRepository(db)
@@ -57,7 +55,6 @@ def update_issue(
     issue_id: int,
     issue_data: IssueUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
 ):
     """Update an issue"""
     repository = IssueRepository(db)
@@ -74,7 +71,6 @@ def update_issue(
 def delete_issue(
     issue_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
 ):
     """Delete an issue"""
     repository = IssueRepository(db)

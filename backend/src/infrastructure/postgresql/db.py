@@ -1,8 +1,8 @@
 from sqlalchemy import URL, create_engine
-from src.conf.model import Settings
+from config.config_provider import get_config
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-settings = Settings()
+settings = get_config()
 
 url = URL.create(
     drivername="postgresql+psycopg",

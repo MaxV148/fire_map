@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Modal, Form, Input, Button, Select } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Modal, Form, Input, Button, Select, Popconfirm, message } from 'antd';
 import { Tag, VehicleType, Event, EventUpdateInput, Issue } from '../../utils/types';
 import { useTagStore } from '../../store/tagStore';
 import { useVehicleStore } from '../../store/vehicleStore';
@@ -26,11 +26,13 @@ export const EditEventIssueModal: React.FC<EditEventIssueModalProps> = ({
   editingIssue,
   form
 }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Verwende die Stores
   const { tags, fetchTags, isLoading: isLoadingTags } = useTagStore();
   const { vehicles, fetchVehicles, isLoading: isLoadingVehicles } = useVehicleStore();
-  const { updateEvent } = useEventStore();
-  const { updateIssue } = useIssueStore();
+  const { updateEvent, deleteEvent } = useEventStore();
+  const { updateIssue, deleteIssue } = useIssueStore();
 
   // Lade Tags und Fahrzeugtypen, wenn Modal geöffnet wird
   useEffect(() => {
@@ -56,17 +58,49 @@ export const EditEventIssueModal: React.FC<EditEventIssueModalProps> = ({
             // Direkte Verwendung des updateEvent aus dem Store
             // Aber wir rufen trotzdem onSave auf, um die übergeordnete Komponente zu informieren
             await updateEvent(editingEvent.id, eventUpdateInput);
+          } else if (editingIssue) {
+            // Füge Issue-Update hier hinzu
+            const issueUpdateInput = {
+              name: values.name,
+              description: values.description,
+              tag_ids: values.tags
+            };
+            
+            await updateIssue(editingIssue.id, issueUpdateInput);
           }
           
           // Rufe die übergeordnete onSave-Funktion auf
           onSave(values);
         } catch (error) {
           console.error('Fehler beim Speichern:', error);
+          message.error('Fehler beim Speichern: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
         }
       })
       .catch((info: any) => {
         console.log('Validierungsfehler:', info);
       });
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      
+      if (editingEvent) {
+        await deleteEvent(editingEvent.id);
+        message.success('Event wurde erfolgreich gelöscht');
+      } else if (editingIssue) {
+        await deleteIssue(editingIssue.id);
+        message.success('Issue wurde erfolgreich gelöscht');
+      }
+      
+      onCancel(); // Schließe das Modal
+      
+    } catch (error) {
+      console.error('Fehler beim Löschen:', error);
+      message.error('Fehler beim Löschen: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -79,6 +113,23 @@ export const EditEventIssueModal: React.FC<EditEventIssueModalProps> = ({
       open={visible}
       onCancel={onCancel}
       footer={[
+        <Popconfirm
+          key="delete"
+          title="Element löschen"
+          description="Sind Sie sicher, dass Sie dieses Element löschen möchten?"
+          onConfirm={handleDelete}
+          okText="Ja"
+          cancelText="Nein"
+          okButtonProps={{ danger: true }}
+        >
+          <Button 
+            key="delete" 
+            danger 
+            loading={isDeleting}
+          >
+            Löschen
+          </Button>
+        </Popconfirm>,
         <Button key="back" onClick={onCancel}>
           Abbrechen
         </Button>,

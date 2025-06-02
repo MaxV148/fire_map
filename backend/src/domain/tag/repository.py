@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, update, delete
 from typing import List, Optional
 
-from src.domain.tag.model import Tag
-from src.domain.tag.dto import TagCreate, TagUpdate
+from domain.tag.model import Tag
+from domain.tag.dto import TagCreate, TagUpdate
 
 
 class TagRepository:

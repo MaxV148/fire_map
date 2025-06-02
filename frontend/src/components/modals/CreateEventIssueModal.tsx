@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Button, Select, Tabs, message, Radio } from 'antd';
+import { Modal, Form, Input, Button, Select, Tabs, message, Radio, Space } from 'antd';
 import { Tag, VehicleType } from '../../utils/types';
 import { useTagStore } from '../../store/tagStore';
 import { useVehicleStore } from '../../store/vehicleStore';
@@ -26,6 +26,8 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<string>(defaultType);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [location, setLocation] = useState<[number, number] | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   // Verwende die Stores
   const { tags, fetchTags, isLoading: isLoadingTags } = useTagStore();
@@ -39,12 +41,39 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
       fetchTags();
       fetchVehicles();
       form.resetFields();
+      setLocation(null);
     }
   }, [visible, fetchTags, fetchVehicles, form]);
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
     form.resetFields();
+    setLocation(null);
+  };
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      message.error('Geolocation wird von Ihrem Browser nicht unterstützt');
+      return;
+    }
+
+    setIsLoadingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocation: [number, number] = [
+          position.coords.latitude,
+          position.coords.longitude
+        ];
+        setLocation(newLocation);
+        form.setFieldsValue({ location: `${newLocation[0].toFixed(6)}, ${newLocation[1].toFixed(6)}` });
+        setIsLoadingLocation(false);
+      },
+      (error) => {
+        console.error('Fehler bei der Standortermittlung:', error);
+        message.error(`Standortermittlung fehlgeschlagen: ${error.message}`);
+        setIsLoadingLocation(false);
+      }
+    );
   };
 
   const handleSubmit = async () => {
@@ -52,11 +81,22 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
       const values = await form.validateFields();
       setIsSubmitting(true);
 
+      // Verwende entweder die manuelle Eingabe oder die GPS-Koordinaten
+      let locationCoords: [number, number] = [0, 0];
+      if (location) {
+        locationCoords = location;
+      } else if (values.location) {
+        const coords = values.location.split(',').map((coord: string) => parseFloat(coord.trim()));
+        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+          locationCoords = [coords[0], coords[1]];
+        }
+      }
+
       if (activeTab === 'event') {
         const eventData = {
           name: values.name,
           description: values.description,
-          location: [0, 0], // Standardwert oder aus einer Karte
+          location: locationCoords,
           tag_ids: values.tags || [],
           vehicle_ids: values.vehicles || []
         };
@@ -66,7 +106,7 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
         const issueData = {
           name: values.name,
           description: values.description,
-          location: [0, 0], // Standardwert oder aus einer Karte
+          location: locationCoords,
           tag_ids: values.tags || []
         };
         await createIssue(issueData);
@@ -82,6 +122,29 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  // Gemeinsames Formularfeld für den Standort, das in beiden Tabs verwendet wird
+  const locationFormItem = (
+    <Form.Item
+      name="location"
+      label="Standort (Latitude, Longitude)"
+      help="Format: 52.520008, 13.404954"
+    >
+      <Space.Compact style={{ width: '100%' }}>
+        <Input 
+          placeholder="Koordinaten eingeben oder aktuelle Position verwenden" 
+          value={location ? `${location[0].toFixed(6)}, ${location[1].toFixed(6)}` : undefined}
+        />
+        <Button 
+          onClick={getCurrentLocation} 
+          loading={isLoadingLocation}
+          icon={<span role="img" aria-label="position">📍</span>}
+        >
+          Aktuelle Position
+        </Button>
+      </Space.Compact>
+    </Form.Item>
+  );
 
   return (
     <Modal
@@ -129,6 +192,7 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
             >
               <TextArea rows={4} />
             </Form.Item>
+            {locationFormItem}
             <Form.Item
               name="tags"
               label="Tags"
@@ -185,6 +249,7 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
             >
               <TextArea rows={4} />
             </Form.Item>
+            {locationFormItem}
             <Form.Item
               name="tags"
               label="Tags"

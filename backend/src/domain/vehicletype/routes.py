@@ -2,11 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
 
-from src.infrastructure.postgresql.db import get_db
-from src.domain.user.dependency import get_current_user
-from src.domain.user.model import User
-from src.domain.vehicletype.repository import VehicleTypeRepository
-from src.domain.vehicletype.dto import (
+from infrastructure.postgresql.db import get_db
+from domain.user.model import User
+from domain.vehicletype.repository import VehicleTypeRepository
+from domain.vehicletype.dto import (
     VehicleTypeCreate,
     VehicleTypeUpdate,
     VehicleTypeResponse,
@@ -22,7 +21,6 @@ vehicle_router = APIRouter(prefix="/vehicle")
 def create_vehicle_type(
     vehicle_data: VehicleTypeCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Create a new vehicle type"""
     repository = VehicleTypeRepository(db)
@@ -30,9 +28,7 @@ def create_vehicle_type(
 
 
 @vehicle_router.get("", response_model=List[VehicleTypeResponse])
-def get_all_vehicle_types(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
-):
+def get_all_vehicle_types(db: Session = Depends(get_db)):
     """Get all vehicle types"""
     repository = VehicleTypeRepository(db)
     return repository.get_all()
@@ -42,7 +38,6 @@ def get_all_vehicle_types(
 def get_vehicle_type(
     vehicle_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get a vehicle type by ID"""
     repository = VehicleTypeRepository(db)
@@ -59,7 +54,6 @@ def get_vehicle_type(
 def get_vehicle_type_by_name(
     name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Get a vehicle type by name"""
     repository = VehicleTypeRepository(db)
@@ -77,7 +71,6 @@ def update_vehicle_type(
     vehicle_id: int,
     vehicle_data: VehicleTypeUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Update a vehicle type"""
     repository = VehicleTypeRepository(db)
@@ -94,7 +87,6 @@ def update_vehicle_type(
 def delete_vehicle_type(
     vehicle_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     """Delete a vehicle type"""
     repository = VehicleTypeRepository(db)

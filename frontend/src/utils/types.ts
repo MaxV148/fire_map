@@ -48,3 +48,9 @@ export interface User {
     otp_configured: boolean;
     role: string;
 }
+
+
+export enum UserRole {
+    USER = 2,
+    ADMIN = 1
+}

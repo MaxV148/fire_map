@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from src.infrastructure.postgresql.db import Base
+from infrastructure.postgresql.db import Base
 from sqlalchemy import Integer, String, DateTime, func
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 

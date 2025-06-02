@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserCreate(BaseModel):
@@ -83,5 +83,19 @@ class OtpDisable(BaseModel):
     code: str
     confirm: bool = False
 
+
 class JWTPayload(BaseModel):
     sub: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    email: str
+    created_at: str
+    role: str
+
+
+class RoleUpdate(BaseModel):
+    role_id: int

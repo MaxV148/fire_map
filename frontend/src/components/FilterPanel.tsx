@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Form, Select, DatePicker, Button, Divider, Space, Typography, Radio } from 'antd';
+import React, { useEffect } from 'react';
+import { Card, Form, Select, DatePicker, Button, Divider, Space, Typography } from 'antd';
 import * as Icons from '@ant-design/icons';
 import type { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
 import { useTagStore } from '../store/tagStore';
 import { useVehicleStore } from '../store/vehicleStore';
+import { useFilterStore } from '../store/filterStore';
+import { useEventStore } from '../store/eventStore';
 
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -15,49 +17,56 @@ interface FilterPanelProps {
 }
 
 export interface FilterValues {
-  eventType?: string[];
-  issueType?: string[];
-  status?: string[];
   dateRange?: [dayjs.Dayjs, dayjs.Dayjs] | null;
-  severity?: string[];
-  view?: 'map' | 'list' | 'both';
   tags?: number[];
   vehicles?: number[];
+  view?: 'map' | 'list' | 'both';
 }
 
 export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange }) => {
   const [form] = Form.useForm();
-  const [view, setView] = useState<'map' | 'list' | 'both'>('both');
   
-  // Tags und Vehicles aus den Stores importieren
+  // Store importieren
   const { tags, fetchTags } = useTagStore();
   const { vehicles, fetchVehicles } = useVehicleStore();
-
+  const { filters, setFilters, resetFilters } = useFilterStore();
+  const { fetchEvents } = useEventStore();
+  
   // Daten beim Laden der Komponente abrufen
   useEffect(() => {
     fetchTags();
     fetchVehicles();
-  }, [fetchTags, fetchVehicles]);
-
-  const handleViewChange = (e: any) => {
-    setView(e.target.value);
-  };
+    
+    // Formular mit Werten aus dem Store vorausfüllen
+    form.setFieldsValue({
+      dateRange: filters.dateRange,
+      tags: filters.tags,
+      vehicles: filters.vehicles
+    });
+  }, [fetchTags, fetchVehicles, form, filters]);
 
   const handleFinish = (values: FilterValues) => {
+    // Store aktualisieren
+    setFilters(values);
+    
+    // Events mit den neuen Filtern laden
+    fetchEvents();
+    
     if (onFilterChange) {
-      onFilterChange({
-        ...values,
-        view
-      });
+      onFilterChange(values);
+      console.log('FILTER: ', values);
     }
   };
 
   const handleReset = () => {
     form.resetFields();
+    resetFilters();
+    
+    // Events ohne Filter laden
+    fetchEvents();
+    
     if (onFilterChange) {
-      onFilterChange({
-        view
-      });
+      onFilterChange({});
     }
   };
 

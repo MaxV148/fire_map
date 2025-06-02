@@ -1,69 +1,28 @@
-[build-system]
-requires = ["setuptools >= 61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "fire-backend"
-version = "0.0.1"
-
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
 dependencies = [
+    "fastapi[standard]>=0.115.12",
     "pydantic==2.10.6",
     "pydantic-settings==2.7.1",
     "alembic==1.14.1",
     "psycopg[binary,pool]==3.2.4",
-    "certifi==2024.12.14",
     "loguru==0.7.3",
-    "PyJWT==2.10.1",
-    "passlib==1.7.4",
     "shapely==2.0.7",
-    "fastapi-pagination==0.12.34",
     "bcrypt==4.2.1",
     "sqlalchemy==2.0.38",
-    "fastapi[standard]==0.115.8",
-    "uvicorn[standard]==0.34.0",
-    "PyJWT==2.10.1",
-    "email_validator==2.2.0",
-    "passlib==1.7.4",
     "GeoAlchemy2==0.17.1",
     "pyotp==2.9.0",
     "qrcode[pil]==7.4.2",
     "gunicorn>=23.0.0",
-    "fastapi-mail>=1.4.2",
+    "fastapi-mail>=1.5.0",
+    "redis>=6.2.0",
 ]
-
-[project.optional-dependencies]
-dev = [
-    "pytest==8.3.4",
-    "pytest-html==4.1.1",
-    "httpx==0.28.1",
-    "ruff==0.7.4"
-]
-
-[project.scripts]
-fire-backend = "src.server:main"
-
-[tool.setuptools]
-packages = [
-    "src",
-    "src.domain",
-    "src.domain.user",
-    "src.domain.role",
-    "src.domain.event",
-    "src.domain.issue",
-    "src.domain.tag",
-    "src.domain.vehicletype",
-    "src.domain.invite",
-    "src.infrastructure.postgresql",
-    "src.conf"
-]
-include-package-data = true
-
-[tool.setuptools.package-data]
-app = ["config.json"]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.4",
-    "ruff>=0.7.4",
+    "ruff>=0.11.11",
 ]
-

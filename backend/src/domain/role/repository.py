@@ -2,8 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, update, delete
 from typing import List, Optional
 
-from src.domain.role.model import Role
-from src.domain.role.dto import RoleCreate, RoleUpdate
+from domain.role.model import Role
+from domain.role.dto import RoleCreate, RoleUpdate
 
 
 class RoleRepository:

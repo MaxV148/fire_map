@@ -5,7 +5,7 @@ from sqlalchemy import Integer, String, DateTime, Boolean, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.infrastructure.postgresql.db import Base
+from infrastructure.postgresql.db import Base
 
 
 class Invite(Base):

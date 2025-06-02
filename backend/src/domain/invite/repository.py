@@ -5,8 +5,8 @@ from uuid import UUID
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
-from src.domain.invite.model import Invite
-from src.domain.invite.dto import InviteCreate
+from domain.invite.model import Invite
+from domain.invite.dto import InviteCreate
 
 
 class InviteRepository:

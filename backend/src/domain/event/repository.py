@@ -7,20 +7,18 @@ from geoalchemy2.shape import to_shape
 from geoalchemy2.elements import WKBElement
 from datetime import datetime
 
-from src.domain.event.model import Event
-from src.domain.event.dto import EventCreate, EventUpdate, EventFilter
-from src.domain.user.model import User
-from src.domain.tag.model import Tag
-from src.domain.vehicletype.model import VehicleType
+from domain.event.model import Event
+from domain.event.dto import EventCreate, EventUpdate, EventFilter
+from domain.user.model import User
+from domain.tag.model import Tag
+from domain.vehicletype.model import VehicleType
 
 
 class EventRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(
-        self, event_data: EventCreate, current_user: Optional[User] = None
-    ) -> Event:
+    def create(self, event_data: EventCreate, current_user: User) -> Event:
         """Create a new event"""
         # Convert location coordinates to WKT point format
         wkt_point = None
@@ -33,7 +31,7 @@ class EventRepository:
             name=event_data.name,
             description=event_data.description,
             location=ST_GeomFromText(wkt_point) if wkt_point else None,
-            created_by=current_user.id if current_user else None,
+            created_by=current_user.id,
         )
 
         # Add tags
