@@ -41,6 +41,7 @@ class User(Base):
         index=True,
         server_default="1",  # 2 = user role
     )
+    deactivated: Mapped[bool] = mapped_column(server_default="False", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()

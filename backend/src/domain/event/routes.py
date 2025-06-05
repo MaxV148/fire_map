@@ -9,6 +9,10 @@ from infrastructure.postgresql.db import get_db
 from domain.user.dependency import is_admin
 from domain.user.model import User
 from domain.event.repository import EventRepository
+from dependencies.repository_dependencies import (
+    get_event_repository,
+    get_user_repository,
+)
 from domain.event.dto import EventCreate, EventUpdate, EventResponse, EventFilter
 
 from domain.user.repository import UserRepository
@@ -23,24 +27,23 @@ event_router = APIRouter(prefix="/event")
 def create_event(
     event_data: EventCreate,
     request: Request,
-    db: Session = Depends(get_db),
+    event_repository: EventRepository = Depends(get_event_repository),
+    user_repository: UserRepository = Depends(get_user_repository),
 ):
-    repository = EventRepository(db)
-    loguru.logger.info(f"Event data: {request.state.user.first_name}")
-    event = repository.create(event_data, request.state.user)
+    current_user = user_repository.get_user_by_id(request.state.user_id)
+    event = event_repository.create(event_data, current_user)
     return event
 
 
 @event_router.get("", response_model=List[EventResponse])
 def get_all_events(
     filters: Annotated[EventFilter, Query()],
-    db: Session = Depends(get_db),
+    event_repository: EventRepository = Depends(get_event_repository),
 ):
     """Get all events with optional filtering"""
-    repository = EventRepository(db)
 
     # Verwende die Datenbankfilterung für effizientere Abfragen
-    events = repository.get_filtered_events(filters)
+    events = event_repository.get_filtered_events(filters)
 
     return events
 
@@ -48,11 +51,10 @@ def get_all_events(
 @event_router.get("/{event_id}", response_model=EventResponse)
 def get_event(
     event_id: int,
-    db: Session = Depends(get_db),
+    event_repository: EventRepository = Depends(get_event_repository),
 ):
     """Get an event by ID"""
-    repository = EventRepository(db)
-    event = repository.get_by_id(event_id)
+    event = event_repository.get_by_id(event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -71,28 +73,25 @@ def update_event(
     event_id: int,
     event_data: EventUpdate,
     request: Request,
-    db: Session = Depends(get_db),
+    event_repository: EventRepository = Depends(get_event_repository),
+    user_repository: UserRepository = Depends(get_user_repository),
 ):
-    current_user = request.state.user
-    """Update an event"""
-    repository = EventRepository(db)
+    current_user = user_repository.get_user_by_id(request.state.user_id)
 
-    # Zuerst prüfen, ob das Event existiert
-    event = repository.get_by_id(event_id)
+    event = event_repository.get_by_id(event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Event with ID {event_id} not found",
         )
 
-    # Prüfen, ob der Benutzer berechtigt ist (Ersteller oder Admin)
     if event.created_by != current_user.id and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Sie haben keine Berechtigung, dieses Event zu bearbeiten",
         )
 
-    updated_event = repository.update(event_id, event_data)
+    updated_event = event_repository.update(event_id, event_data)
 
     return updated_event
 
@@ -101,28 +100,23 @@ def update_event(
 def delete_event(
     event_id: int,
     request: Request,
-    db: Session = Depends(get_db),
+    event_repository: EventRepository = Depends(get_event_repository),
+    user_repository: UserRepository = Depends(get_user_repository),
 ):
-    """Delete an event"""
-    repository = EventRepository(db)
-    user_repo = UserRepository(db)
-    current_user = user_repo.get_user_by_id(request.state.user_id)
+    current_user = user_repository.get_user_by_id(request.state.user_id)
 
-    # Zuerst prüfen, ob das Event existiert
-    event = repository.get_by_id(event_id)
+    event = event_repository.get_by_id(event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Event with ID {event_id} not found",
         )
 
-    # Prüfen, ob der Benutzer berechtigt ist (Ersteller oder Admin)
     if event.created_by != current_user.id and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Sie haben keine Berechtigung, dieses Event zu löschen",
         )
 
-    # Event löschen
-    repository.delete(event_id)
+    event_repository.delete(event_id)
     return None

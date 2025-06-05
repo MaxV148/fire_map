@@ -50,7 +50,7 @@ class EventResponse(BaseModel):
     location: Optional[List[float]] = None
     tags: List[TagResponse]
     vehicles: List[VehicleTypeResponse]
-    created_by_user_id: Optional[int] = None
+    created_by_user_id: int = None
     created_at: datetime
 
     @field_validator("location", mode="before")
@@ -73,6 +73,12 @@ class EventFilter(BaseModel):
     )
     end_date: Optional[datetime] = Field(
         None, description="Filter events until this date"
+    )
+    name: Optional[str] = Field(
+        None, description="Filter events by name (case-insensitive text search)"
+    )
+    description: Optional[str] = Field(
+        None, description="Filter events by description (case-insensitive text search)"
     )
 
     model_config = ConfigDict(populate_by_name=True, extra="ignore")

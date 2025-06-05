@@ -1,9 +1,12 @@
 from io import BytesIO
 from fastapi import APIRouter, Depends, HTTPException, Query, Body, Request
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse, Response, JSONResponse
 from sqlalchemy.orm import Session
 import pyotp
 import qrcode
+from sqlalchemy.sql.functions import current_user
+
+from domain.role.repository import RoleRepository
 from domain.user.dto import (
     UserCreate,
     Authresponse,
@@ -13,6 +16,7 @@ from domain.user.dto import (
     OtpDisable,
     LoginStep2,
     RoleUpdate,
+    DeactivateUser,
 )
 from infrastructure.postgresql.db import get_db
 from domain.user.model import User, OtpSettings
@@ -25,8 +29,12 @@ from pydantic import BaseModel
 from domain.role.model import Role
 from domain.user.repository import UserRepository
 from config.config_provider import get_config
-from dependencies.repository_dependencies import get_user_repository
+from dependencies.repository_dependencies import (
+    get_user_repository,
+    get_role_repository,
+)
 from infrastructure.redis.redis_client import session_manager
+from domain.user.dependency import is_admin
 
 config = get_config()
 user_router = APIRouter(prefix="/user")
@@ -125,7 +133,6 @@ async def verify_2fa(
             detail="2FA is not configured for this user",
         )
 
-    # Verify OTP code
     totp = pyotp.TOTP(current_user.otp_settings.secret)
     if not totp.verify(otp_data.code):
         raise HTTPException(
@@ -146,109 +153,131 @@ async def verify_2fa(
     return response
 
 
-# @user_router.post("/2fa/disable")
-# async def disable_2fa(
-#     otp_data: OtpDisable,
-#     current_user: User = Depends(get_current_user),
-#     db: Session = Depends(get_db),
-# ):
-#     """Disable 2FA for the current user if they are not an admin."""
-#
-#     # Check if user is admin
-#     if current_user.role.name == "admin":
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#             detail="Admin users cannot disable 2FA",
-#         )
-#
-#     # Check if 2FA is configured
-#     if not current_user.otp_settings or not current_user.otp_settings.otp_configured:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="2FA is not configured for this user",
-#         )
-#
-#     # Verify OTP code
-#     totp = pyotp.TOTP(current_user.otp_settings.secret)
-#     if not totp.verify(otp_data.code):
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid OTP code"
-#         )
-#
-#     # Check confirmation
-#     if not otp_data.confirm:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Please confirm that you want to disable 2FA by setting confirm=true",
-#         )
-#
-#     # Disable 2FA
-#     current_user.otp_settings.otp_configured = False
-#     current_user.otp_settings.secret = None
-#     db.commit()
-#
-#     return {"message": "2FA has been disabled successfully"}
+@user_router.post("/2fa/disable")
+async def disable_2fa(
+    otp_data: OtpDisable,
+    request: Request,
+    user_repo: UserRepository = Depends(get_user_repository),
+    otp_repo: OTPRepo = Depends(get_otp_repo),
+):
+    """Disable 2FA for the current user if they are not an admin."""
+    current_user = user_repo.get_user_by_id(request.state.user_id)
+
+    # Check if user is admin
+    if is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin users cannot disable 2FA",
+        )
+
+    # Check if 2FA is configured
+    if not current_user.otp_settings or not current_user.otp_settings.otp_configured:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="2FA is not configured for this user",
+        )
+
+    # Verify OTP code
+    totp = pyotp.TOTP(current_user.otp_settings.secret)
+    if not totp.verify(otp_data.code):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid OTP code"
+        )
+
+    # Check confirmation
+    if not otp_data.confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please confirm that you want to disable 2FA by setting confirm=true",
+        )
+
+    try:
+        otp_repo.disable(current_user.id)
+        session_manager.delete_session(request.cookies.get(config.session_cookie_id))
+        return Response(status_code=status.HTTP_200_OK)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 ### User Admin routes
+@user_router.get("", response_model=list[UserResponse])
+def get_users(
+    request: Request, user_repo: UserRepository = Depends(get_user_repository)
+):
+    user_id = request.state.user_id
+    user = user_repo.get_user_by_id(user_id)
+    if not is_admin(user):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+    users = user_repo.get_all_users()
+    return [
+        UserResponse(
+            id=u.id,
+            first_name=u.first_name,
+            last_name=u.last_name,
+            email=u.email,
+            created_at=u.created_at.isoformat(),
+            role=u.role.name,
+            deactivated=u.deactivated,
+        )
+        for u in users
+    ]
 
-# @user_router.get('/', response_model=list[UserResponse])
-# def get_users(db: Session = Depends(get_db),user: User = Depends(get_current_user)):
-#     if user.role.name != "admin":
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#         )
-#     users = db.query(User).all()
-#     return [UserResponse(
-#         id=u.id,
-#         first_name=u.first_name,
-#         last_name=u.last_name,
-#         email=u.email,
-#         created_at=u.created_at.isoformat(),
-#         role=u.role.name
-#     ) for u in users]
-#
-#
-# @user_router.patch("/edit_role")
-# def edit_role(
-#     user_id: int = Query(..., description="ID of the user to update"),
-#     role_data: RoleUpdate = Body(...),
-#     db: Session = Depends(get_db),
-#     user: User = Depends(get_current_user)
-# ):
-#     if user.role.name != "admin":
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#         )
-#     role = db.query(Role).filter(Role.id == role_data.role_id).first()
-#     if not role:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
-#         )
-#     target_user = db.query(User).filter(User.id == user_id).first()
-#     if not target_user:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-#         )
-#     target_user.role_id = role_data.role_id
-#     db.commit()
-#     return Response(status_code=status.HTTP_204_NO_CONTENT)
-#
-# @user_router.delete("/{user_id}")
-# def delete_user(
-#     user_id: int,
-#     db: Session = Depends(get_db),
-#     user: User = Depends(get_current_user)
-# ):
-#     if user.role.name != "admin":
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#         )
-#     target_user = db.query(User).filter(User.id == user_id).first()
-#     if not target_user:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-#         )
-#     db.delete(target_user)
-#     db.commit()
-#     return  Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@user_router.patch("/edit_role/{user_id}")
+def edit_role(
+    request: Request,
+    user_id: int,
+    role_data: RoleUpdate = Body(...),
+    user_repo: UserRepository = Depends(get_user_repository),
+    role_repo: RoleRepository = Depends(get_role_repository),
+):
+    current_user = user_repo.get_user_by_id(request.state.user_id)
+    if not is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+    target_user = user_repo.get_user_by_id(user_id)
+
+    role = role_repo.get_by_name(role_data.role_name)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found"
+        )
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User not found"
+        )
+    user_repo.set_role(target_user.id, role.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@user_router.patch("/deactivate/{user_id}", response_model=UserResponse)
+def deactivate(
+    request: Request,
+    user_id: int,
+    deactivate_body: DeactivateUser = Body(...),
+    user_repo: UserRepository = Depends(get_user_repository),
+):
+    current_user = user_repo.get_user_by_id(request.state.user_id)
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    try:
+        user = user_repo.get_user_by_id(user_id)
+        user = user_repo.deactivate_user(user, deactivate_body.deactivate)
+        return UserResponse(
+            id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email,
+            created_at=user.created_at.isoformat(),
+            role=user.role.name,
+            deactivated=user.deactivated,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )

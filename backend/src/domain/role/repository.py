@@ -28,6 +28,11 @@ class RoleRepository:
         result = self.db.execute(query).scalar_one_or_none()
         return result
 
+    def get_by_name(self, name: str) -> Optional[Role]:
+        """Get a role by its name"""
+        query = select(Role).where(Role.name == name)
+        return self.db.execute(query).scalar_one_or_none()
+
     def get_all(self) -> List[Role]:
         """Get all roles"""
         query = select(Role)

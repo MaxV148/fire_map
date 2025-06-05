@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -95,7 +95,12 @@ class UserResponse(BaseModel):
     email: str
     created_at: str
     role: str
+    deactivated: bool
 
 
 class RoleUpdate(BaseModel):
-    role_id: int
+    role_name: Literal["user", "admin"] = Field(...)
+
+
+class DeactivateUser(BaseModel):
+    deactivate: bool

@@ -89,6 +89,14 @@ class EventRepository:
         if filters.end_date:
             conditions.append(Event.created_at <= filters.end_date)
 
+        # Filter für Name anwenden (case-insensitive LIKE)
+        if filters.name:
+            conditions.append(Event.name.ilike(f"%{filters.name}%"))
+
+        # Filter für Beschreibung anwenden (case-insensitive LIKE)
+        if filters.description:
+            conditions.append(Event.description.ilike(f"%{filters.description}%"))
+
         if conditions:
             query = query.where(and_(*conditions))
 
