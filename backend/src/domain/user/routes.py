@@ -8,25 +8,17 @@ from sqlalchemy.sql.functions import current_user
 
 from domain.role.repository import RoleRepository
 from domain.user.dto import (
-    UserCreate,
-    Authresponse,
     MeResponse,
-    UserLogin,
     OtpVerify,
     OtpDisable,
-    LoginStep2,
     RoleUpdate,
     DeactivateUser,
 )
-from infrastructure.postgresql.db import get_db
 from domain.user.model import User, OtpSettings
 from starlette import status
 from domain.user.otp_repo import OTPRepo
 from dependencies.repository_dependencies import get_otp_repo
 from domain.user.dto import UserResponse
-from loguru import logger
-from pydantic import BaseModel
-from domain.role.model import Role
 from domain.user.repository import UserRepository
 from config.config_provider import get_config
 from dependencies.repository_dependencies import (

@@ -56,5 +56,11 @@ class IssueFilter(BaseModel):
     end_date: Optional[datetime] = Field(
         None, description="Filter events until this date"
     )
+    name: Optional[str] = Field(
+        None, description="Filter issues by name (case-insensitive text search)"
+    )
+    description: Optional[str] = Field(
+        None, description="Filter issues by description (case-insensitive text search)"
+    )
 
     model_config = ConfigDict(populate_by_name=True, extra="ignore")

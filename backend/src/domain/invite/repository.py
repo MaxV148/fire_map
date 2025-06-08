@@ -32,7 +32,7 @@ class InviteRepository:
         self.db.refresh(invite)
         return invite
 
-    def get_by_uuid(self, invite_uuid: UUID) -> Optional[Invite]:
+    def get_by_uuid(self, invite_uuid: str) -> Optional[Invite]:
         """Get an invite by its UUID"""
         return self.db.query(Invite).filter(Invite.invite_uuid == invite_uuid).first()
 
@@ -56,7 +56,7 @@ class InviteRepository:
         """Count total number of invites"""
         return self.db.scalar(select(func.count()).select_from(Invite))
 
-    def is_valid(self, invite_uuid: UUID) -> bool:
+    def is_valid(self, invite_uuid: str) -> bool:
         """Check if an invite is valid (exists, not used, not expired)"""
         invite = self.get_by_uuid(invite_uuid)
         if not invite:

@@ -62,6 +62,14 @@ class IssueRepository:
         if filter.end_date:
             conditions.append(Issue.created_at <= filter.end_date)
 
+        # Filter für Name anwenden (case-insensitive LIKE)
+        if filter.name:
+            conditions.append(Issue.name.ilike(f"%{filter.name}%"))
+
+        # Filter für Beschreibung anwenden (case-insensitive LIKE)
+        if filter.description:
+            conditions.append(Issue.description.ilike(f"%{filter.description}%"))
+
         if conditions:
             query = query.where(and_(*conditions))
 

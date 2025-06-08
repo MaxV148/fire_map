@@ -1,13 +1,13 @@
 from io import BytesIO
 from urllib.request import Request
 
-from fastapi import APIRouter, Depends, HTTPException, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, Response, Request, Query
 from fastapi.responses import StreamingResponse
 import pyotp
 import qrcode
 from sqlalchemy.orm.session import Session
 from fastapi.responses import JSONResponse
-
+from misc.sign import verify_signed_invitation_token
 from domain.user.repository import UserRepository
 from domain.user.otp_repo import OTPRepo
 from infrastructure.redis.redis_client import session_manager
@@ -16,7 +16,12 @@ from domain.user.dto import UserCreate, Authresponse, UserLogin, LoginStep2
 from domain.user.model import User, OtpSettings
 from infrastructure.postgresql.db import get_db
 from config.config_provider import get_config
-from dependencies.repository_dependencies import get_user_repository, get_otp_repo
+from dependencies.repository_dependencies import (
+    get_user_repository,
+    get_otp_repo,
+    get_invite_repo,
+)
+from domain.invite.repository import InviteRepository
 from starlette import status
 from loguru import logger
 
@@ -26,9 +31,53 @@ config = get_config()
 
 
 @auth_router.post("/register", response_model=Authresponse)
-def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
+def register_user(
+    user_data: UserCreate,
+    invite: str = Query(),
+    user_repo: UserRepository = Depends(get_user_repository),
+    invite_repo: InviteRepository = Depends(get_invite_repo),
+):
+    # Validiere Invitation Token
+    is_valid, invite_uuid = verify_signed_invitation_token(
+        invite, config.invite_hmac_secret
+    )
+    if not is_valid or not invite_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or malformed invitation token",
+        )
+
+    # Prüfe, ob die Einladung in der Datenbank existiert und gültig ist
+    db_invite = invite_repo.get_by_uuid(invite_uuid)
+    if not db_invite:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found"
+        )
+
+    # Prüfe, ob die Einladung bereits verwendet wurde
+    if db_invite.is_used:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invitation has already been used",
+        )
+
+    # Prüfe, ob die Einladung abgelaufen ist
+    from datetime import datetime
+
+    if db_invite.expire_date < datetime.now():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invitation has expired"
+        )
+
+    # Prüfe, ob die Email der Einladung mit der Registrierungs-Email übereinstimmt
+    if db_invite.email.lower() != user_data.email.lower():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email does not match the invitation",
+        )
+
     # Prüfe, ob Email bereits existiert
-    existing_email = db.query(User).filter(User.email == user_data.email).first()
+    existing_email = user_repo.get_user_by_email(user_data.email)
     if existing_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Email already taken"
@@ -41,6 +90,7 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="First name and last name are required",
         )
 
+    # Erstelle neuen User
     hashed_password = hash_password(user_data.password)
     new_user = User(
         email=user_data.email,
@@ -48,10 +98,12 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         first_name=user_data.first_name,
         last_name=user_data.last_name,
     )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    user_repo.create_user(new_user)
 
+    # Markiere die Einladung als verwendet
+    invite_repo.mark_as_used(db_invite.invite_uuid)
+
+    # Erstelle Session
     sid = session_manager.create_session(new_user.id)
     res = gen_auth_cookie(sid)
     return res
@@ -59,8 +111,6 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 
 @auth_router.post("/login", response_model=Authresponse)
 def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
-    """First step of login process. Returns temporary token if 2FA is required."""
-    # Find user
     user = db.query(User).filter(User.email == user_data.email).first()
     if not user or not verify_password(user_data.password, user.password):
         raise HTTPException(

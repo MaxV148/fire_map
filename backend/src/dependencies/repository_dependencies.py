@@ -8,6 +8,9 @@ from domain.role.repository import RoleRepository
 from domain.event.repository import EventRepository
 from domain.tag.repository import TagRepository
 from domain.vehicletype.repository import VehicleTypeRepository
+from domain.issue.repository import IssueRepository
+from domain.vehicletype.repository import VehicleTypeRepository
+from domain.invite.repository import InviteRepository
 from domain.user.otp_repo import OTPRepo
 
 
@@ -33,3 +36,11 @@ def get_tag_repository(db: Session = Depends(get_db)) -> TagRepository:
 
 def get_vehicle_type_repository(db: Session = Depends(get_db)) -> VehicleTypeRepository:
     return VehicleTypeRepository(db)
+
+
+def get_issue_repository(db: Session = Depends(get_db)) -> IssueRepository:
+    return IssueRepository(db)
+
+
+def get_invite_repo(db: Session = Depends(get_db)) -> InviteRepository:
+    return InviteRepository(db)

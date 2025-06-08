@@ -16,6 +16,9 @@ from infrastructure.redis.redis_client import session_manager
 config = get_config()
 app = FastAPI()
 
+PUBLIC_ROUTES = ["/api/v1/auth/login", "/api/v1/auth/register"]
+PUBLIC_ROUTES_DEV = ["/docs", "/openapi.json"]
+
 
 @app.middleware("http")
 async def session_middleware(request: Request, call_next):
@@ -38,12 +41,7 @@ async def session_middleware(request: Request, call_next):
         response = await call_next(request)
         return response
 
-    if (
-        path == "/api/v1/auth/login"
-        or path == "/api/v1/auth/register"
-        or path == "/docs"
-        or path == "/openapi.json"
-    ):
+    if path in PUBLIC_ROUTES + PUBLIC_ROUTES_DEV:
         return await call_next(request)
     session_id = request.cookies.get(config.session_cookie_id)
     if not session_id:

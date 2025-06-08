@@ -6,6 +6,11 @@ from infrastructure.postgresql.db import get_db
 from domain.user.model import User
 from domain.issue.repository import IssueRepository
 from domain.issue.dto import IssueCreate, IssueUpdate, IssueResponse, IssueFilter
+from dependencies.repository_dependencies import (
+    get_issue_repository,
+    get_user_repository,
+)
+from domain.user.repository import UserRepository
 
 # Create router
 issue_router = APIRouter(prefix="/issue")
@@ -17,31 +22,29 @@ issue_router = APIRouter(prefix="/issue")
 def create_issue(
     issue_data: IssueCreate,
     request: Request,
-    db: Session = Depends(get_db),
+    issue_repository: IssueRepository = Depends(get_issue_repository),
+    user_repository: UserRepository = Depends(get_user_repository),
 ):
     """Create a new issue"""
-    repository = IssueRepository(db)
-    current_user = request.state.user
-    return repository.create(issue_data, current_user)
+    current_user = user_repository.get_user_by_id(request.state.user_id)
+    return issue_repository.create(issue_data, current_user)
 
 
 @issue_router.get("", response_model=List[IssueResponse])
 def get_all_issues(
     filters: Annotated[IssueFilter, Query()],
-    db: Session = Depends(get_db),
+    issue_repository: IssueRepository = Depends(get_issue_repository),
 ):
-    repository = IssueRepository(db)
-    return repository.get_filtered_issues(filters)
+    return issue_repository.get_filtered_issues(filters)
 
 
 @issue_router.get("/{issue_id}", response_model=IssueResponse)
 def get_issue(
     issue_id: int,
-    db: Session = Depends(get_db),
+    issue_repository: IssueRepository = Depends(get_issue_repository),
 ):
     """Get an issue by ID"""
-    repository = IssueRepository(db)
-    issue = repository.get_by_id(issue_id)
+    issue = issue_repository.get_by_id(issue_id)
     if not issue:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -54,11 +57,10 @@ def get_issue(
 def update_issue(
     issue_id: int,
     issue_data: IssueUpdate,
-    db: Session = Depends(get_db),
+    issue_repository: IssueRepository = Depends(get_issue_repository),
 ):
     """Update an issue"""
-    repository = IssueRepository(db)
-    updated_issue = repository.update(issue_id, issue_data)
+    updated_issue = issue_repository.update(issue_id, issue_data)
     if not updated_issue:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -70,11 +72,10 @@ def update_issue(
 @issue_router.delete("/{issue_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_issue(
     issue_id: int,
-    db: Session = Depends(get_db),
+    issue_repository: IssueRepository = Depends(get_issue_repository),
 ):
     """Delete an issue"""
-    repository = IssueRepository(db)
-    success = repository.delete(issue_id)
+    success = issue_repository.delete(issue_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

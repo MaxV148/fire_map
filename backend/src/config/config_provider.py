@@ -33,6 +33,12 @@ class ConfigProvider(BaseSettings):
         default="user_id", description="Session user id key"
     )
 
+    # HMAC Security
+    invite_hmac_secret: str = Field(
+        default="your-secret-key-change-in-production",
+        description="Secret key for HMAC signing of invite tokens",
+    )
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
