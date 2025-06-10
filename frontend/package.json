@@ -10,12 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@fontsource/roboto": "^5.2.5",
     "@mui/icons-material": "^6.4.6",
     "@mui/x-date-pickers": "^7.28.2",
     "@mui/x-date-pickers-pro": "^7.28.2",
     "@types/lodash": "^4.17.16",
     "antd": "^5.25.1",
+    "axios": "^1.9.0",
     "date-fns": "^2.25.0",
     "dayjs": "^1.11.13",
     "jwt-decode": "^4.0.0",

@@ -1,3 +1,5 @@
+import {BASE_URL} from '../utils/constants';
+
 interface LoginCredentials {
   email: string;
   password: string;
@@ -345,6 +347,78 @@ export const authService = {
     } catch (error) {
       console.error('Error checking 2FA status:', error);
       return false;
+    }
+  },
+
+  /**
+   * Setup 2FA by fetching the QR code
+   * @returns Promise<Blob> The QR code image as a blob
+   */
+  setup2FA: async (): Promise<Blob> => {
+    try {
+      const response = await fetch(`${BASE_URL}/v1/user/2fa/setup`, {
+        method: 'POST',
+        credentials: 'include', // Use cookies for authentication
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Laden des QR-Codes');
+      }
+
+      return await response.blob();
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
+
+  /**
+   * Verify 2FA setup with the OTP code
+   * @param code - The 6-digit OTP code
+   * @returns Promise<void>
+   */
+  verify2FASetup: async (code: string): Promise<void> => {
+    try {
+      const response = await fetch('http://localhost:8000/v1/user/2fa/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Use cookies for authentication
+        body: JSON.stringify({ code }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Ungültiger Verifikationscode');
+      }
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
+
+  /**
+   * Disable 2FA for the current user
+   * @param code - The 6-digit OTP code for confirmation
+   * @returns Promise<void>
+   */
+  disable2FA: async (code: string): Promise<void> => {
+    try {
+      const response = await fetch('http://localhost:8000/v1/user/2fa/disable', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Use cookies for authentication
+        body: JSON.stringify({ code, confirm: true }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Fehler beim Deaktivieren von 2FA');
+      }
+    } catch (error) {
+      return Promise.reject(error);
     }
   },
 };

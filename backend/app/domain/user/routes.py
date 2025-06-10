@@ -71,10 +71,11 @@ def setup_2fa(
     # Create or update OTP settings
     if current_user.otp_settings:
         current_user.otp_settings.secret = secret
-        current_user.otp_settings.otp_configured = True
+        current_user.otp_settings.otp_configured = False  # Set to False initially, will be True after verification
+        otp_repo.save(current_user.otp_settings)
     else:
         otp_settings = OtpSettings(
-            user_id=current_user.id, secret=secret, otp_configured=True
+            user_id=current_user.id, secret=secret, otp_configured=False  # Set to False initially, will be True after verification
         )
         otp_repo.save(otp_settings)
 
@@ -114,15 +115,16 @@ async def verify_2fa(
     otp_data: OtpVerify,
     request: Request,
     user_repo: UserRepository = Depends(get_user_repository),
+    otp_repo: OTPRepo = Depends(get_otp_repo),
 ):
     current_user = user_repo.get_user_by_id(request.state.user_id)
     temp_session_id = request.cookies.get(config.temp_session_cookie_id)
 
-    # Check if 2FA is configured
-    if not current_user.otp_settings or not current_user.otp_settings.otp_configured:
+    # Check if 2FA setup is in progress (secret exists but not yet configured)
+    if not current_user.otp_settings or not current_user.otp_settings.secret:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA is not configured for this user",
+            detail="2FA setup not started for this user",
         )
 
     totp = pyotp.TOTP(current_user.otp_settings.secret)
@@ -130,19 +132,28 @@ async def verify_2fa(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid OTP code"
         )
-    sid = session_manager.create_session(current_user.id)
-    response = Response(status_code=status.HTTP_200_OK)
-    response.delete_cookie(key=config.temp_session_cookie_id)
-    response.set_cookie(
-        key=config.session_cookie_id,
-        httponly=True,
-        secure=True,
-        max_age=config.session_expire_seconds,
-        value=sid,
-    )
-    session_manager.delete_temp_session(temp_session_id)
-
-    return response
+    
+    # If verification successful, mark 2FA as configured
+    current_user.otp_settings.otp_configured = True
+    otp_repo.save(current_user.otp_settings)
+    
+    # Handle session management only if there's a temp session (login flow)
+    if temp_session_id:
+        sid = session_manager.create_session(current_user.id)
+        response = Response(status_code=status.HTTP_200_OK)
+        response.delete_cookie(key=config.temp_session_cookie_id)
+        response.set_cookie(
+            key=config.session_cookie_id,
+            httponly=True,
+            secure=True,
+            max_age=config.session_expire_seconds,
+            value=sid,
+        )
+        session_manager.delete_temp_session(temp_session_id)
+        return response
+    else:
+        # This is a setup verification, not a login verification
+        return Response(status_code=status.HTTP_200_OK)
 
 
 @user_router.post("/2fa/disable")

@@ -4,7 +4,7 @@ import hashlib
 import base64
 from unittest.mock import patch
 
-from backend.src.misc.sign import (
+from backend.app.misc.sign import (
     sign_invitation_id,
     verify_invitation_signature,
     create_signed_invitation_token,

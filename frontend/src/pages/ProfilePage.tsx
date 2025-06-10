@@ -2,12 +2,30 @@ import { Card, Typography, Descriptions, Avatar, Button, message, Row, Col } fro
 import { UserOutlined } from '@ant-design/icons';
 import { useUserStore} from "../store/userStore.ts";
 import NavBase from "../components/NavBase.tsx";
+import { TwoFASetupModal } from "../components/modals/TwoFASetupModal.tsx";
+import { useState } from 'react';
 
 const { Title, Text } = Typography;
 
 
 function ProfilePage() {
-    const {user} = useUserStore();
+    const {user, fetchMe} = useUserStore();
+    const [twoFAModalVisible, setTwoFAModalVisible] = useState(false);
+
+    const handleTwoFASetupClick = () => {
+        console.log("handleTwoFASetupClick");
+        setTwoFAModalVisible(true);
+    };
+
+    const handleTwoFAModalCancel = () => {
+        setTwoFAModalVisible(false);
+    };
+
+    const handleTwoFASetupSuccess = async () => {
+        // Benutzerprofil neu laden, um den aktualisierten 2FA-Status zu erhalten
+        await fetchMe();
+        message.success('2FA wurde erfolgreich eingerichtet!');
+    };
 
   if (!user) {
     return (
@@ -61,7 +79,7 @@ function ProfilePage() {
           <Card title="Sicherheit" style={{ marginBottom: '24px', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }}>
               <Button
                   type="primary"
-                  onClick={() => message.info('2FA-Konfiguration noch nicht implementiert')}
+                  onClick={handleTwoFASetupClick}
               >
                   {user.otp_configured ? '2FA neu konfigurieren' : '2FA aktivieren'}
               </Button>
@@ -73,6 +91,13 @@ function ProfilePage() {
                   Passwort ändern
               </Button>
           </Card>
+
+          <TwoFASetupModal
+              visible={twoFAModalVisible}
+              onCancel={handleTwoFAModalCancel}
+              onSuccess={handleTwoFASetupSuccess}
+              userEmail={user.email}
+          />
       </div>);
 
 

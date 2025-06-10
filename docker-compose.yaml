@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgis/postgis:17-3.5
+    image: postgis/postgis:17-3.5-alpine
+    platform: linux/amd64
     ports:
       - "5432:5432"
     volumes:
@@ -13,9 +14,21 @@ services:
   backend:
     build: ./backend/.
     volumes:
-      - ./backend/src:/app/src
+      - ./backend/app:/app/app
     ports:
       - "8000:8000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=root
+      - DB_PASSWORD=test123
+      - DB_NAME=fire_backend
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    depends_on:
+      - postgres
+      - redis
 
   mailserver:
     image: axllent/mailpit
@@ -26,7 +39,7 @@ services:
   frontend:
     build: ./frontend/.
     volumes:
-      - ./frontend/src:/app/src
+      - ./frontend/app:/app/app
       - ./frontend/public:/app/public
     ports:
       - "5173:5173"

@@ -8,10 +8,14 @@ RUN apk add --no-cache gcc musl-dev linux-headers
 # Install GEOS library (Alpine equivalent of libgeos-dev)
 RUN apk add --no-cache geos-dev
 
+# Install uv
+RUN pip install uv
+
 COPY . .
 
-RUN pip install --no-cache-dir .
+# Install dependencies with uv
+RUN uv sync
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uv", "run", "fastapi", "dev", "--host", "0.0.0.0", "--port", "8000"]

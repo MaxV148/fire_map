@@ -24,7 +24,7 @@ mail_config = ConnectionConfig(
     MAIL_PASSWORD="test",
     MAIL_FROM="mail@mail.com",
     MAIL_PORT=1025,
-    MAIL_SERVER="localhost",
+    MAIL_SERVER="mailserver",
     MAIL_FROM_NAME="Fire Map",
     MAIL_STARTTLS=False,
     MAIL_SSL_TLS=False,
@@ -79,10 +79,8 @@ async def create_invite(
     base_url = str(request.base_url).rstrip("/")
     invite_link = f"{base_url}/register?invitation={invite_token}"
 
-    # Load and customize email template
     with open("./mail_templates/invite.html", "r") as f:
         content = f.read()
-        # Replace placeholder with actual invite link
         content = content.replace("{invite_link}", invite_link)
 
         message = MessageSchema(
