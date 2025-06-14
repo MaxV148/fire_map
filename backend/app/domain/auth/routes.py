@@ -155,3 +155,10 @@ def logout_user(request: Request, response: Response):
     # Clear the session cookie
     response.delete_cookie(key="sid")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@auth_router.get("/status")
+def get_status(request: Request, response: JSONResponse):
+    session_id = request.cookies.get(config.session_cookie_id)
+    if session_manager.get_session(session_id):
+        return {"status": "active"}
+    return {"status": "inactive"}

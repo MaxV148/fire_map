@@ -1,6 +1,6 @@
 import { User, UserRole } from '../utils/types';
 import { create } from 'zustand';
-import { BASE_URL } from "../utils/constants.ts";
+import { apiClient } from '../utils/api';
 
 interface AdminUserStore {
     users: User[];
@@ -20,18 +20,11 @@ export const useAdminUserStore = create<AdminUserStore>((set, get) => ({
         set({ isLoading: true, error: null });
 
         try {
-            const response = await fetch(`${BASE_URL}/v1/user/`, {
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Laden der Benutzer');
-            }
-
-            const users: User[] = await response.json();
+            const response = await apiClient.get('/v1/user/');
+            const users: User[] = response.data;
             set({ users, isLoading: false });
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Laden der Benutzer', isLoading: false });
         }
     },
 
@@ -39,14 +32,7 @@ export const useAdminUserStore = create<AdminUserStore>((set, get) => ({
         set({ isLoading: true, error: null });
 
         try {
-            const response = await fetch(`${BASE_URL}/v1/user/${userId}`, {
-                method: 'DELETE',
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Löschen des Benutzers');
-            }
+            await apiClient.delete(`/v1/user/${userId}`);
 
             // Aktualisiere die Benutzerliste nach dem Löschen
             set({
@@ -57,7 +43,7 @@ export const useAdminUserStore = create<AdminUserStore>((set, get) => ({
             return true;
         } catch (error: any) {
             set({
-                error: error.message || 'Unbekannter Fehler',
+                error: error.response?.data?.message || error.message || 'Unbekannter Fehler',
                 isLoading: false,
             });
             return false;
@@ -68,21 +54,10 @@ export const useAdminUserStore = create<AdminUserStore>((set, get) => ({
         set({ isLoading: true, error: null });
 
         try {
-            const response = await fetch(`${BASE_URL}/v1/user/${userId}/role`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ role_id: role_id }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Aktualisieren der Benutzerrolle');
-            }
-
+            const response = await apiClient.put(`/v1/user/${userId}/role`, { role_id: role_id });
+            
             // Aktualisiere den Benutzer in der Liste
-            const updatedUser: User = await response.json();
+            const updatedUser: User = response.data;
             set(state => ({
                 users: state.users.map(user => 
                     user.id === userId ? updatedUser : user
@@ -93,7 +68,7 @@ export const useAdminUserStore = create<AdminUserStore>((set, get) => ({
             return true;
         } catch (error: any) {
             set({
-                error: error.message || 'Unbekannter Fehler',
+                error: error.response?.data?.message || error.message || 'Unbekannter Fehler',
                 isLoading: false,
             });
             return false;

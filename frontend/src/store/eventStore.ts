@@ -1,6 +1,6 @@
 import { Event, EventUpdateInput } from '../utils/types';
 import { create } from 'zustand';
-import { BASE_URL } from '../utils/constants';
+import { apiClient } from '../utils/api';
 import { useFilterStore } from './filterStore';
 import dayjs from 'dayjs';
 
@@ -54,40 +54,23 @@ export const useEventStore = create<EventStore>((set, get) => ({
             }
 
             const queryString = params.toString();
-            const url = `${BASE_URL}/v1/event${queryString ? `?${queryString}` : ''}`;
+            const url = `/v1/event${queryString ? `?${queryString}` : ''}`;
 
-            const response = await fetch(url, {
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Laden der Events');
-            }
-
-            const events: Event[] = await response.json();
+            const response = await apiClient.get(url);
+            const events: Event[] = response.data;
+            
             set({ events, isLoading: false });
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Laden der Events', isLoading: false });
         }
     },
 
     createEvent: async (eventData) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/event`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-                body: JSON.stringify(eventData),
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Erstellen des Events');
-            }
-
-            const newEvent: Event = await response.json();
+            const response = await apiClient.post('/v1/event', eventData);
+            const newEvent: Event = response.data;
+            
             set(state => ({
                 events: [...state.events, newEvent],
                 isLoading: false
@@ -95,7 +78,7 @@ export const useEventStore = create<EventStore>((set, get) => ({
 
             return newEvent;
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Erstellen des Events', isLoading: false });
             throw error;
         }
     },
@@ -103,20 +86,8 @@ export const useEventStore = create<EventStore>((set, get) => ({
     updateEvent: async (eventId, eventData) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/event/${eventId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-                body: JSON.stringify(eventData),
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Aktualisieren des Events');
-            }
-
-            const updatedEvent: Event = await response.json();
+            const response = await apiClient.put(`/v1/event/${eventId}`, eventData);
+            const updatedEvent: Event = response.data;
             
             set(state => ({
                 events: state.events.map(event => 
@@ -127,7 +98,7 @@ export const useEventStore = create<EventStore>((set, get) => ({
 
             return updatedEvent;
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Aktualisieren des Events', isLoading: false });
             throw error;
         }
     },
@@ -135,21 +106,14 @@ export const useEventStore = create<EventStore>((set, get) => ({
     deleteEvent: async (eventId) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/event/${eventId}`, {
-                method: 'DELETE',
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Löschen des Events');
-            }
+            await apiClient.delete(`/v1/event/${eventId}`);
 
             set(state => ({
                 events: state.events.filter(event => event.id !== eventId),
                 isLoading: false
             }));
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Löschen des Events', isLoading: false });
             throw error;
         }
     },

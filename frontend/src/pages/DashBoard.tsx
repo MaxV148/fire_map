@@ -1,22 +1,9 @@
 import {Col, Row, Space} from 'antd';
-import * as Icons from '@ant-design/icons';
 import React from 'react';
-import {useNavigate} from "react-router-dom";
 import LocationMap from '../components/map';
 import EventsIssuesList from "../components/EventsIssuesList.tsx";
 import FilterPanel, {FilterValues} from '../components/FilterPanel.tsx';
 import NavBase from "../components/NavBase.tsx";
-
-interface IconProps {
-    icon: string;
-
-    [key: string]: any;
-}
-
-function Icon(props: IconProps) {
-    const IconComponent = Icons[props.icon as keyof typeof Icons] as React.ComponentType<any>;
-    return <IconComponent {...props} />;
-}
 
 
 const DashBoard: React.FC = () => {

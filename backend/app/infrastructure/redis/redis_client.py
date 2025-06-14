@@ -1,9 +1,9 @@
 import loguru
 import redis
 import json
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from uuid import uuid4
 from config.config_provider import get_config
 
 config = get_config()
@@ -29,7 +29,7 @@ class RedisSessionManager:
         self.default_expire_time = config.session_expire_seconds
 
     def create_temp_session(self, user_id: int) -> str:
-        session_id = str(uuid4())
+        session_id = secrets.token_urlsafe(32)
         session_key = f"{self.temp_session_prefix}{session_id}"
 
         data = {
@@ -50,7 +50,7 @@ class RedisSessionManager:
     def create_session(
         self, user_id: int, session_data: Optional[Dict[str, Any]] = None
     ) -> str:
-        session_id = str(uuid4())
+        session_id = secrets.token_urlsafe(32)
         session_key = f"{self.session_prefix}{session_id}"
 
         data = {

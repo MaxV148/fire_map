@@ -80,7 +80,8 @@ const NavBase: React.FC<NavBaseProps> = ({content}) => {
                             icon={<Icon icon="DeploymentUnitOutlined"/>}>
                             <Menu.Item key={'users'} icon={<Icon icon="UserOutlined"/>}
                                        onClick={() => navigate('/user')}>Users</Menu.Item>
-                            <Menu.Item key={'invitations'} icon={<Icon icon="MailOutlined"/>}>Invitations</Menu.Item>
+                            <Menu.Item key={'invitations'} icon={<Icon icon="MailOutlined"/>}
+                                       onClick={() => navigate('/invitations')}>Invitations</Menu.Item>
                         </Menu.SubMenu>
                     )}
                 </Menu>

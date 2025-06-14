@@ -17,7 +17,7 @@ from infrastructure.redis.redis_client import session_manager
 config = get_config()
 app = FastAPI()
 
-PUBLIC_ROUTES = ["/api/v1/auth/login", "/api/v1/auth/register"]
+PUBLIC_ROUTES = ["/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/status"]
 PUBLIC_ROUTES_DEV = ["/docs", "/openapi.json"]
 
 from starlette.middleware.base import BaseHTTPMiddleware

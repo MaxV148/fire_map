@@ -1,6 +1,6 @@
 import { Issue, Tag } from '../utils/types';
 import { create } from 'zustand';
-import { BASE_URL } from '../utils/constants';
+import { apiClient } from '../utils/api';
 
 interface IssueUpdateInput {
     name?: string;
@@ -38,38 +38,20 @@ export const useIssueStore = create<IssueStore>((set, get) => ({
     fetchIssues: async () => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/issue`, {
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Laden der Issues');
-            }
-
-            const issues: Issue[] = await response.json();
+            const response = await apiClient.get('/v1/issue');
+            const issues: Issue[] = response.data;
             set({ issues, isLoading: false });
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Laden der Issues', isLoading: false });
         }
     },
 
     createIssue: async (issueData) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/issue`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-                body: JSON.stringify(issueData),
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Erstellen des Issues');
-            }
-
-            const newIssue: Issue = await response.json();
+            const response = await apiClient.post('/v1/issue', issueData);
+            const newIssue: Issue = response.data;
+            
             set(state => ({
                 issues: [...state.issues, newIssue],
                 isLoading: false
@@ -77,7 +59,7 @@ export const useIssueStore = create<IssueStore>((set, get) => ({
 
             return newIssue;
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Erstellen des Issues', isLoading: false });
             throw error;
         }
     },
@@ -85,20 +67,8 @@ export const useIssueStore = create<IssueStore>((set, get) => ({
     updateIssue: async (issueId, issueData) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/issue/${issueId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-                body: JSON.stringify(issueData),
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Aktualisieren des Issues');
-            }
-
-            const updatedIssue: Issue = await response.json();
+            const response = await apiClient.put(`/v1/issue/${issueId}`, issueData);
+            const updatedIssue: Issue = response.data;
             
             set(state => ({
                 issues: state.issues.map(issue => 
@@ -109,7 +79,7 @@ export const useIssueStore = create<IssueStore>((set, get) => ({
 
             return updatedIssue;
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Aktualisieren des Issues', isLoading: false });
             throw error;
         }
     },
@@ -117,21 +87,14 @@ export const useIssueStore = create<IssueStore>((set, get) => ({
     deleteIssue: async (issueId) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/issue/${issueId}`, {
-                method: 'DELETE',
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Löschen des Issues');
-            }
+            await apiClient.delete(`/v1/issue/${issueId}`);
 
             set(state => ({
                 issues: state.issues.filter(issue => issue.id !== issueId),
                 isLoading: false
             }));
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Löschen des Issues', isLoading: false });
             throw error;
         }
     },

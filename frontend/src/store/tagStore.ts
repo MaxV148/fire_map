@@ -1,6 +1,6 @@
 import { Tag } from '../utils/types';
 import { create } from 'zustand';
-import { BASE_URL } from '../utils/constants';
+import { apiClient } from '../utils/api';
 
 interface TagStore {
     tags: Tag[];
@@ -22,38 +22,20 @@ export const useTagStore = create<TagStore>((set, get) => ({
     fetchTags: async () => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/tag`, {
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Laden der Tags');
-            }
-
-            const tags: Tag[] = await response.json();
+            const response = await apiClient.get('/v1/tag');
+            const tags: Tag[] = response.data;
             set({ tags, isLoading: false });
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Laden der Tags', isLoading: false });
         }
     },
 
     createTag: async (tagData) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/tag`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-                body: JSON.stringify(tagData),
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Erstellen des Tags');
-            }
-
-            const newTag: Tag = await response.json();
+            const response = await apiClient.post('/v1/tag', tagData);
+            const newTag: Tag = response.data;
+            
             set(state => ({
                 tags: [...state.tags, newTag],
                 isLoading: false
@@ -61,7 +43,7 @@ export const useTagStore = create<TagStore>((set, get) => ({
 
             return newTag;
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Erstellen des Tags', isLoading: false });
             throw error;
         }
     },
@@ -69,20 +51,8 @@ export const useTagStore = create<TagStore>((set, get) => ({
     updateTag: async (tagId, tagData) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/tag/${tagId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-                body: JSON.stringify(tagData),
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Aktualisieren des Tags');
-            }
-
-            const updatedTag: Tag = await response.json();
+            const response = await apiClient.put(`/v1/tag/${tagId}`, tagData);
+            const updatedTag: Tag = response.data;
             
             set(state => ({
                 tags: state.tags.map(tag => 
@@ -93,7 +63,7 @@ export const useTagStore = create<TagStore>((set, get) => ({
 
             return updatedTag;
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Aktualisieren des Tags', isLoading: false });
             throw error;
         }
     },
@@ -101,21 +71,14 @@ export const useTagStore = create<TagStore>((set, get) => ({
     deleteTag: async (tagId) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await fetch(`${BASE_URL}/v1/tag/${tagId}`, {
-                method: 'DELETE',
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-            });
-
-            if (!response.ok) {
-                throw new Error('Fehler beim Löschen des Tags');
-            }
+            await apiClient.delete(`/v1/tag/${tagId}`);
 
             set(state => ({
                 tags: state.tags.filter(tag => tag.id !== tagId),
                 isLoading: false
             }));
         } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.response?.data?.message || error.message || 'Fehler beim Löschen des Tags', isLoading: false });
             throw error;
         }
     },

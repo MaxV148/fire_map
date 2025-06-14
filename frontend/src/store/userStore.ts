@@ -1,6 +1,6 @@
 import { User } from '../utils/types';
 import { create } from 'zustand';
-import { BASE_URL} from "../utils/constants.ts";
+import { apiClient } from '../utils/api';
 
 
 interface UserStore {
@@ -9,17 +9,17 @@ interface UserStore {
     isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
-    rehydrate: () => Promise<void>;
     login: (email: string, password: string) => Promise<boolean>;
     logout: () => void;
     fetchMe: () => Promise<void>;
+    checkAuthStatus: () => Promise<void>;
 }
 
-export const useUserStore = create<UserStore>((set) => ({
+export const useUserStore = create<UserStore>((set, get) => ({
     user: null,
     isAdmin: false,
     isAuthenticated: false,
-    isLoading: true,
+    isLoading: false,
     error: null,
 
     login: async (email, password) => {
@@ -27,23 +27,11 @@ export const useUserStore = create<UserStore>((set) => ({
 
         try {
             // Session-basierter Login über /auth/login
-            const res = await fetch(BASE_URL + '/v1/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-                credentials: 'include', // Wichtig für Cookies
-            });
-
-            if (!res.ok) throw new Error('Login fehlgeschlagen');
+            await apiClient.post('/v1/auth/login', { email, password });
 
             // Nach erfolgreichem Login Userdaten via /me abrufen
-            const meRes = await fetch(BASE_URL + '/v1/user/me', {
-                credentials: 'include', // Session-Cookie wird automatisch mitgesendet
-            });
-
-            if (!meRes.ok) throw new Error('Benutzerdaten konnten nicht geladen werden');
-
-            const user: User = await meRes.json();
+            const meRes = await apiClient.get('/v1/user/me');
+            const user: User = meRes.data;
 
             // Zustand setzen
             set({
@@ -56,7 +44,7 @@ export const useUserStore = create<UserStore>((set) => ({
             return true;
         } catch (error: any) {
             set({
-                error: error.message || 'Unbekannter Fehler',
+                error: error.response?.data?.message || error.message || 'Unbekannter Fehler',
                 isLoading: false,
                 user: null,
                 isAuthenticated: false,
@@ -68,10 +56,7 @@ export const useUserStore = create<UserStore>((set) => ({
     logout: async () => {
         try {
             // Session serverseitig beenden
-            await fetch(BASE_URL + '/v1/auth/logout', {
-                method: 'POST',
-                credentials: 'include',
-            });
+            await apiClient.post('/v1/auth/logout');
         } catch (error) {
             // Auch bei Fehlern den lokalen Zustand zurücksetzen
             console.error('Logout-Fehler:', error);
@@ -80,20 +65,18 @@ export const useUserStore = create<UserStore>((set) => ({
             set({
                 user: null,
                 isAuthenticated: false,
+                isAdmin: false,
                 error: null,
             });
         }
     },
 
     fetchMe: async () => {
+        set({ isLoading: true });
+        
         try {
-            const res = await fetch(BASE_URL + '/v1/user/me', {
-                credentials: 'include', 
-            });
-
-            if (!res.ok) throw new Error('Fehler beim Abrufen von /me');
-
-            const user: User = await res.json();
+            const res = await apiClient.get('/v1/user/me');
+            const user: User = res.data;
 
             set({
                 user,
@@ -104,22 +87,40 @@ export const useUserStore = create<UserStore>((set) => ({
             set({
                 user: null,
                 isAuthenticated: false,
-                error: err.message || 'Fehler bei /me',
+                isAdmin: false,
+                error: err.response?.data?.message || err.message || 'Fehler bei /me',
             });
+        } finally {
+            set({ isLoading: false });
         }
     },
     
-    rehydrate: async () => {
-        // Bei Session-basierter Auth prüfen wir den /me Endpoint
-        // um zu testen ob eine Session noch gültig ist
+    checkAuthStatus: async () => {
         set({ isLoading: true });
         
         try {
-            await useUserStore.getState().fetchMe();
-            // Wenn fetchMe erfolgreich ist, ist die Session gültig
-            // isAuthenticated wird bereits in fetchMe auf true gesetzt
-        } catch (error) {
-            // Wenn fetchMe fehlschlägt, ist die Session ungültig
+            const res = await apiClient.get('/v1/auth/status');
+            const isActive = res.data.status === 'active';
+            
+            if (isActive) {
+                // Session ist aktiv - lade Userdaten falls nicht vorhanden
+                if (!get().user) {
+                    await get().fetchMe();
+                } else {
+                    // Session ist aktiv und Userdaten sind bereits vorhanden
+                    set({ isAuthenticated: true });
+                }
+            } else {
+                // Session ist inaktiv
+                set({
+                    user: null,
+                    isAuthenticated: false,
+                    isAdmin: false,
+                    error: null,
+                });
+            }
+        } catch (error: any) {
+            // Bei Fehlern Session als inaktiv behandeln
             set({
                 user: null,
                 isAuthenticated: false,
