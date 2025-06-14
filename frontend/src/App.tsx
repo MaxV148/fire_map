@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import LoginPage from "./pages/LoginPage.tsx";
+import RegisterPage from "./pages/RegisterPage.tsx";
 import { useEffect } from "react";
 import DashBoard from "./pages/DashBoard.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
@@ -73,6 +74,7 @@ export default function App() {
                     </Route>
                 </Route>
                 <Route path='/login' element={<LoginPage />} />
+                <Route path='/register' element={<RegisterPage />} />
             </Routes>
         </Router>
     )

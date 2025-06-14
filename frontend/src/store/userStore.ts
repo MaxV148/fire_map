@@ -10,6 +10,7 @@ interface UserStore {
     isLoading: boolean;
     error: string | null;
     login: (email: string, password: string) => Promise<boolean>;
+    register: (firstName: string, lastName: string, email: string, password: string, inviteToken: string) => Promise<boolean>;
     logout: () => void;
     fetchMe: () => Promise<void>;
     checkAuthStatus: () => Promise<void>;
@@ -45,6 +46,47 @@ export const useUserStore = create<UserStore>((set, get) => ({
         } catch (error: any) {
             set({
                 error: error.response?.data?.message || error.message || 'Unbekannter Fehler',
+                isLoading: false,
+                user: null,
+                isAuthenticated: false,
+            });
+            return false;
+        }
+    },
+
+    register: async (firstName, lastName, email, password, inviteToken) => {
+        set({ isLoading: true, error: null });
+
+        try {
+            // Registrierung über /auth/register mit Einladungstoken
+            await apiClient.post('/v1/auth/register', {
+                first_name: firstName,
+                last_name: lastName,
+                email,
+                password
+            }, {
+                params: {
+                    invite: inviteToken
+                }
+            });
+
+            // Nach erfolgreicher Registrierung Userdaten via /me abrufen
+            const meRes = await apiClient.get('/v1/user/me');
+            const user: User = meRes.data;
+
+            // Zustand setzen
+            set({
+                user,
+                isAuthenticated: true,
+                isAdmin: user.role === 'admin',
+                isLoading: false,
+            });
+
+            return true;
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'Registrierung fehlgeschlagen';
+            set({
+                error: errorMessage,
                 isLoading: false,
                 user: null,
                 isAuthenticated: false,

@@ -39,8 +39,15 @@ services:
   frontend:
     build: ./frontend/.
     volumes:
+      - ./frontend/src:/app/src
       - ./frontend/app:/app/app
       - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tsconfig.app.json:/app/tsconfig.app.json
+      - ./frontend/tsconfig.node.json:/app/tsconfig.node.json
+      - ./frontend/eslint.config.js:/app/eslint.config.js
     ports:
       - "5173:5173"
 

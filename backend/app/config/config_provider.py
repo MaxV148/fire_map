@@ -39,6 +39,16 @@ class ConfigProvider(BaseSettings):
         description="Secret key for HMAC signing of invite tokens",
     )
 
+    # Initial Admin Setup
+    initial_admin_email: str = Field(
+        default="admin@fire-map.com",
+        description="Email for the initial admin user"
+    )
+    initial_admin_password: str = Field(
+        default="admin123",
+        description="Password for the initial admin user"
+    )
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

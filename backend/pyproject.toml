@@ -22,6 +22,10 @@ dependencies = [
     "redis>=6.2.0",
 ]
 
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["tests*"]
+
 [dependency-groups]
 dev = [
     "pytest>=8.4.0",
