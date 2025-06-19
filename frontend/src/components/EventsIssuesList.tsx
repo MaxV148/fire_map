@@ -8,7 +8,7 @@ import { useUserStore} from "../store/userStore.ts";
 import { useEventStore} from "../store/eventStore.ts";
 import { useIssueStore } from "../store/issueStore.ts";
 import { Event, Issue } from '../utils/types.ts'
-
+import { useTheme } from '../contexts/ThemeContext'; 
 
 const { Text, Title } = Typography;
 const { TabPane } = Tabs;
@@ -27,7 +27,7 @@ export const EventsIssuesList: React.FC<EventsIssuesListProps> = ({ filters }) =
   const { isAuthenticated } = useUserStore();
   const { events, fetchEvents, isLoading: eventsLoading, updateEvent } = useEventStore();
   const { issues, fetchIssues, isLoading: issuesLoading, updateIssue } = useIssueStore();
-
+  const { mode } = useTheme();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -132,11 +132,23 @@ export const EventsIssuesList: React.FC<EventsIssuesListProps> = ({ filters }) =
     form.resetFields();
   };
 
+  const cardBg = mode === 'light' ? '#FAFAFA' : '#1D3557';
 
   return (
     <>
       <Card
-        style={{ width: '100%', height: '100%' }}
+        style={{ 
+          width: '100%', 
+          height: '100%', 
+          backgroundColor: cardBg,
+          '--ant-card-actions-bg': cardBg
+        } as React.CSSProperties}
+        styles={{
+          actions: {
+            backgroundColor: cardBg,
+            borderTop: `1px solid ${mode === 'light' ? '#ECECEC' : '#457B9D'}`
+          }
+        }}
         actions={[
             <Button 
                 type="primary" 
@@ -273,7 +285,7 @@ export const EventsIssuesList: React.FC<EventsIssuesListProps> = ({ filters }) =
         visible={isCreateModalVisible}
         onCancel={handleCreateModalCancel}
         onSuccess={handleCreateSuccess}
-        defaultType={activeTab as 'event' | 'issue'}
+        defaultType={activeTab === 'events' ? 'event' : 'issue'}
       />
     </>
   );

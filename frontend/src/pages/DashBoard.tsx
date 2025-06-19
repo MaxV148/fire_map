@@ -39,11 +39,11 @@ const DashBoard: React.FC = () => {
 
         <Row gutter={[16, 16]}
              style={{marginTop: '16px', marginLeft: '16px', marginRight: '16px', marginBottom: '16px'}}>
-            <Col span={12}>
-                <EventsIssuesList filters={filters}/>
-            </Col>
-            <Col span={12}>
+            <Col xs={24} sm={24} md={12} lg={12} xl={12}>
                 <FilterPanel onFilterChange={handleFilterChange}/>
+            </Col>
+            <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+                <EventsIssuesList filters={filters}/>
             </Col>
         </Row>
     </>

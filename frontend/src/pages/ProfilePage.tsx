@@ -43,22 +43,30 @@ function ProfilePage() {
 
           <Card style={{ marginBottom: '24px', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }}>
               <Row gutter={[24, 24]} align="middle">
-                  <Col xs={24} sm={8} style={{ textAlign: 'center' }}>
+                  <Col xs={24} sm={8} style={{ 
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                  }}>
                       <Avatar
                           size={100}
                           icon={<UserOutlined />}
                           style={{
-                              backgroundColor: '#1890ff',
+                              backgroundColor: '#E63946', // Neue Primärfarbe aus unserem Theme
                               marginBottom: '16px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
+                              boxShadow: '0 4px 12px rgba(230, 57, 70, 0.2)' // Weicher Schatten mit Primärfarbe
                           }}
                       >
                           {user.first_name[0]}{user.last_name[0]}
                       </Avatar>
-                      <Title level={4}>{user.first_name} {user.last_name}</Title>
-                      <Text type="secondary">{user.role}</Text>
+                      <Title level={4} style={{ margin: '0 0 8px 0', textAlign: 'center' }}>
+                          {user.first_name} {user.last_name}
+                      </Title>
+                      <Text type="secondary" style={{ textAlign: 'center' }}>
+                          {user.role}
+                      </Text>
                   </Col>
 
                   <Col xs={24} sm={16}>

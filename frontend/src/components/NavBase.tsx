@@ -3,6 +3,7 @@ import {Badge, Button, Col, Divider, Dropdown, Layout, Menu, Row, Space, Typogra
 import * as Icons from '@ant-design/icons';
 import {useUserStore} from "../store/userStore.ts";
 import {useNavigate} from "react-router-dom";
+import {useTheme} from "../contexts/ThemeContext";
 
 
 interface IconProps {
@@ -26,17 +27,21 @@ const NavBase: React.FC<NavBaseProps> = ({content}) => {
     const [collapsed, setCollapsed] = React.useState(false);
     const [selectedKeys, setSelectedKeys] = React.useState(['dashboard']);
     const {user, logout, isAdmin} = useUserStore();
+    const {mode, toggleTheme} = useTheme();
     const navigate = useNavigate();
     const handleLogout = () => {
         logout();
     };
+
+    // Dynamic header background based on theme - using colorBgContainer
+    const headerBg = mode === 'light' ? '#FAFAFA' : '#1D3557';
     return (
         <Layout hasSider={true}>
             <Layout.Sider
                 collapsible={true}
                 breakpoint="lg"
                 style={{minHeight: '100vh', minWidth: '100vw'}}
-                theme="dark"
+                theme={mode}
                 collapsed={collapsed}
                 onCollapse={(...args) => {
                     const collapsed = args[0];
@@ -51,14 +56,15 @@ const NavBase: React.FC<NavBaseProps> = ({content}) => {
                         paddingBottom: '20px'
                     }}
                 >
-                    <Icon
-                        icon="AntDesignOutlined"
-                        style={{fontSize: '50px', color: '#ffffff'}}
+                    <img
+                        src="/logo.png"
+                        alt="Logo"
+                        style={{height: '80px', width: 'auto'}}
                     />
                 </Col>
                 <Menu
                     mode="inline"
-                    theme="dark"
+                    theme={mode}
                     selectedKeys={selectedKeys}
                     onSelect={(...args) => {
                         const selectedKeys = args[0].selectedKeys;
@@ -72,7 +78,6 @@ const NavBase: React.FC<NavBaseProps> = ({content}) => {
                     >
                         Dashboard
                     </Menu.Item>
-                    <Divider/>
                     {isAdmin && (
                         <Menu.SubMenu
                             key={'admin'}
@@ -87,7 +92,7 @@ const NavBase: React.FC<NavBaseProps> = ({content}) => {
                 </Menu>
             </Layout.Sider>
             <Layout hasSider={false}>
-                <Layout.Header style={{background: '#ffffff'}}>
+                <Layout.Header style={{background: headerBg}}>
                     <Row
                         justify="start"
                         gutter={0}
@@ -115,6 +120,12 @@ const NavBase: React.FC<NavBaseProps> = ({content}) => {
                             </Col>
                         </Space>
                         <Space size="small">
+                            <Button
+                                type="text"
+                                icon={<Icon icon={mode === 'light' ? 'MoonOutlined' : 'SunOutlined'}/>}
+                                onClick={toggleTheme}
+                                title={mode === 'light' ? 'Zu Dark Mode wechseln' : 'Zu Light Mode wechseln'}
+                            />
                             <Dropdown
                                 menu={{
                                     items: [
@@ -157,13 +168,13 @@ const NavBase: React.FC<NavBaseProps> = ({content}) => {
                 <Layout.Content>
                     {content}
                 </Layout.Content>
-                <Layout.Footer style={{backgroundColor: '#ffffff'}}>
+                <Layout.Footer style={{backgroundColor: headerBg}}>
                     <Row
                         gutter={16}
                         justify="space-between"
                     >
                         <Col>
-                            <Typography.Text>© Something goes here.</Typography.Text>
+                            <Typography.Text>© Feurix.</Typography.Text>
                         </Col>
                         <Col>
                             <Space

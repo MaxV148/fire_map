@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEventStore } from '../store/eventStore';
 import { useIssueStore } from '../store/issueStore';
-import { Event, Issue } from '../utils/types';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Lösung für das Leaflet Icon Problem
 const defaultIcon = L.icon({
@@ -63,6 +63,7 @@ export const LocationMap: React.FC<MapProps> = ({
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
+  const { mode } = useTheme();
 
   // Events und Issues aus den Stores holen
   const { events, fetchEvents, isLoading: eventsLoading } = useEventStore();
@@ -88,11 +89,14 @@ export const LocationMap: React.FC<MapProps> = ({
     setMapZoom(zoom);
   };
 
+  // Dynamic card background based on theme - using colorBgContainer
+  const cardBg = mode === 'light' ? '#FAFAFA' : '#1D3557';
+
   return (
     <Card 
-      style={{ width: '100%', height: '100%' }}
+      style={{ width: '100%', height: '100%', backgroundColor: cardBg }}
     >
-      <div style={{ height: 400, width: '100%' }}>
+      <div style={{ height: 400, width: '100%'}}>
         <MapContainer 
           center={mapCenter} 
           zoom={mapZoom} 

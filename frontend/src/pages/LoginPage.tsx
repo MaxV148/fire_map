@@ -55,8 +55,15 @@ const LoginPage: React.FC = () => {
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' 
               }}
             >
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <img
+                  src="/logo.png"
+                  alt="Feurix Logo"
+                  style={{ height: '120px', width: 'auto' }}
+                />
+              </div>
               <Title level={2} style={{ textAlign: 'center', marginBottom: 30 }}>
-                Anmeldung
+                Login
               </Title>
               
               <Form

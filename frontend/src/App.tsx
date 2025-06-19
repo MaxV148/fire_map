@@ -8,7 +8,39 @@ import UsersPage from "./pages/UsersPage.tsx";
 import InvitationPage from "./pages/InvitationPage.tsx";
 import { User } from './utils/types';
 import { useUserStore } from './store/userStore';
-import { Spin } from 'antd';
+import { Spin, ConfigProvider } from 'antd';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { lightTheme, darkTheme } from './utils/themes';
+
+// Theme-aware App Component
+const AppContent = () => {
+    const { mode } = useTheme();
+    const { isAuthenticated, user, checkAuthStatus, isLoading } = useUserStore();
+    const currentTheme = mode === 'light' ? lightTheme : darkTheme;
+
+    useEffect(() => {
+        checkAuthStatus();
+    }, [checkAuthStatus]);
+
+    return (
+        <ConfigProvider theme={currentTheme}>
+            <Router>
+                <Routes>
+                    <Route element={<PrivateRoutes isAuthenticated={isAuthenticated} isLoading={isLoading} />}>
+                        <Route path='/' element={<DashBoard />} />
+                        <Route path='/profile' element={<ProfilePage />} />
+                        <Route element={<RoleBasedRoute user={user} allowedRoles={['admin']} isLoading={isLoading} />}>
+                            <Route path='/user' element={<UsersPage />} />
+                            <Route path='/invitations' element={<InvitationPage />} />
+                        </Route>
+                    </Route>
+                    <Route path='/login' element={<LoginPage />} />
+                    <Route path='/register' element={<RegisterPage />} />
+                </Routes>
+            </Router>
+        </ConfigProvider>
+    );
+};
 
 const PrivateRoutes = ({ isAuthenticated, isLoading }: { isAuthenticated: boolean, isLoading: boolean }) => {
     if (isLoading) {
@@ -54,30 +86,9 @@ const RoleBasedRoute = ({ user, allowedRoles, isLoading }: { user: User | null, 
 };
 
 export default function App() {
-    const { isAuthenticated, user, checkAuthStatus, isLoading } = useUserStore();
-
-    useEffect(() => {
-        checkAuthStatus();
-    }, [checkAuthStatus]);
-
-
-
     return (
-        <Router>
-            <Routes>
-                <Route element={<PrivateRoutes isAuthenticated={isAuthenticated} isLoading={isLoading} />}>
-                    <Route path='/' element={<DashBoard />} />
-                    <Route path='/profile' element={<ProfilePage />} />
-                    <Route element={<RoleBasedRoute user={user} allowedRoles={['admin']} isLoading={isLoading} />}>
-                        <Route path='/user' element={<UsersPage />} />
-                        <Route path='/invitations' element={<InvitationPage />} />
-                    </Route>
-                </Route>
-                <Route path='/login' element={<LoginPage />} />
-                <Route path='/register' element={<RegisterPage />} />
-            </Routes>
-        </Router>
-    )
-
-
+        <ThemeProvider>
+            <AppContent />
+        </ThemeProvider>
+    );
 }

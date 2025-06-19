@@ -27,6 +27,7 @@ import {
     ExclamationCircleOutlined
 } from '@ant-design/icons';
 import { useInvitationStore } from '../store/invitationStore';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { Title, Text } = Typography;
 
@@ -38,6 +39,7 @@ interface InvitationFormValues {
 const InvitationPage: React.FC = () => {
     const [form] = Form.useForm();
     const [isCreating, setIsCreating] = useState(false);
+    const { mode } = useTheme();
     
     const {
         invitations,
@@ -48,6 +50,9 @@ const InvitationPage: React.FC = () => {
         createInvitation,
         deleteInvitation,
     } = useInvitationStore();
+
+    // Dynamic card background based on theme - using colorBgContainer
+    const cardBg = mode === 'light' ? '#FAFAFA' : '#1D3557';
 
     useEffect(() => {
         fetchInvitations();
@@ -170,7 +175,11 @@ const InvitationPage: React.FC = () => {
             <Row gutter={[24, 24]}>
                 {/* Formular zum Erstellen neuer Einladungen */}
                 <Col xs={24} lg={8}>
-                    <Card title="Neue Einladung versenden" bordered>
+                    <Card 
+                        title="Neue Einladung versenden" 
+                        variant="outlined"
+                        style={{ backgroundColor: cardBg }}
+                    >
                         <Form
                             form={form}
                             layout="vertical"
@@ -228,7 +237,8 @@ const InvitationPage: React.FC = () => {
                 <Col xs={24} lg={16}>
                     <Card 
                         title={`Versendete Einladungen (${totalCount})`}
-                        bordered
+                        variant="outlined"
+                        style={{ backgroundColor: cardBg }}
                         extra={
                             <Button 
                                 onClick={() => fetchInvitations()}

@@ -7,6 +7,7 @@ import { useTagStore } from '../store/tagStore';
 import { useVehicleStore } from '../store/vehicleStore';
 import { useFilterStore } from '../store/filterStore';
 import { useEventStore } from '../store/eventStore';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -25,7 +26,7 @@ export interface FilterValues {
 
 export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange }) => {
   const [form] = Form.useForm();
-  
+  const { mode } = useTheme();
   // Store importieren
   const { tags, fetchTags } = useTagStore();
   const { vehicles, fetchVehicles } = useVehicleStore();
@@ -75,10 +76,12 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange }) => {
     return current && current > dayjs().endOf('day');
   };
 
+  const cardBg = mode === 'light' ? '#FAFAFA' : '#1D3557';
+
   return (
     <Card
       title={<Title level={5}>Filter</Title>}
-      style={{ width: '100%' }}
+      style={{ width: '100%', backgroundColor: cardBg }}
     >
       <Form 
         form={form}

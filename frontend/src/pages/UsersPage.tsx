@@ -96,6 +96,7 @@ const UsersPage: React.FC = () => {
                 rowKey="id" 
                 loading={isLoading}
                 pagination={{ pageSize: 10 }}
+                bordered
             />
         </div>
     );

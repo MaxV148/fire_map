@@ -42,8 +42,9 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
       fetchVehicles();
       form.resetFields();
       setLocation(null);
+      setActiveTab(defaultType); // Setze den aktiven Tab basierend auf defaultType
     }
-  }, [visible, fetchTags, fetchVehicles, form]);
+  }, [visible, fetchTags, fetchVehicles, form, defaultType]);
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -107,7 +108,9 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
           name: values.name,
           description: values.description,
           location: locationCoords,
-          tag_ids: values.tags || []
+          tag_ids: values.tags || [],
+          status: 'open',
+          severity: 'medium'
         };
         await createIssue(issueData);
         message.success('Issue erfolgreich erstellt');
