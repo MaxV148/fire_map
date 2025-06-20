@@ -71,28 +71,20 @@ jobs:
             mkdir -p ${{ env.BACKEND_DIR }}
             mkdir -p ${{ env.FRONTEND_DIR }}
 
-      - name: Add server to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.HOST }} >> ~/.ssh/known_hosts
 
       - name: Upload backend to server
         run: |
           echo "${{ secrets.PRIV_KEY }}" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
       
-          # Sicheres Eintragen des Host-Schlüssels zur Vermeidung von MITM
           mkdir -p ~/.ssh
           ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.HOST }} >> ~/.ssh/known_hosts
       
-          # Datei-Upload via rsync
           rsync -avz -e "ssh -i /tmp/deploy_key -p ${{ secrets.SSH_PORT }}" \
             ./backend/dist/ \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}
       
-          # Aufräumen
           rm -f /tmp/deploy_key
-
 
       - name: Install backend dependencies
         uses: appleboy/ssh-action@v1
