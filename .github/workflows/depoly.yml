@@ -78,10 +78,13 @@ jobs:
 
       - name: Upload backend to server
         run: |
+          # Write SSH key to file
+          echo "${{ secrets.PRIV_KEY }}" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
           # Upload dist folder to server
-          rsync -avz -e "ssh -i ${{ secrets.PRIV_KEY }} -p ${{ secrets.SSH_PORT }}" ./backend/dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
-          # Upload other necessary files
-          #rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./backend/pyproject.toml ./backend/alembic.ini ./backend/alembic/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/
+          rsync -avz -e "ssh -i /tmp/deploy_key -p ${{ secrets.SSH_PORT }}" ./backend/dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
+        env:
+          PRIV_KEY: ${{ secrets.PRIV_KEY }}
 
       - name: Install backend dependencies
         uses: appleboy/ssh-action@v1
