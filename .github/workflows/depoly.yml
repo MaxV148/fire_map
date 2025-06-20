@@ -51,8 +51,8 @@ jobs:
       - name: Set up deployment variables
         run: |
           echo "RELEASE_NAME=$(date +%s)" >> $GITHUB_ENV
-          echo "BACKEND_DIR=${{ env.RELEASES_PATH }}/backend-${{ github.run_number }}" >> $GITHUB_ENV
-          echo "FRONTEND_DIR=${{ env.RELEASES_PATH }}/frontend-${{ github.run_number }}" >> $GITHUB_ENV
+          echo "BACKEND_DIR=${{ env.RELEASES_PATH }}/${{ github.run_number }}/backend" >> $GITHUB_ENV
+          echo "FRONTEND_DIR=${{ env.RELEASES_PATH }}/${{ github.run_number }}/frontend" >> $GITHUB_ENV
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -74,9 +74,9 @@ jobs:
       - name: Upload backend to server
         run: |
           # Upload dist folder to server
-          rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./backend/dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
+          rsync -avz  ./backend/dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
           # Upload other necessary files
-          rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./backend/pyproject.toml ./backend/alembic.ini ./backend/alembic/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/
+          #rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./backend/pyproject.toml ./backend/alembic.ini ./backend/alembic/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/
 
       - name: Install backend dependencies
         uses: appleboy/ssh-action@v1
@@ -98,7 +98,7 @@ jobs:
             uv pip install --system dist/*.whl
             
             # Run database migrations
-            uv run alembic upgrade head
+            #uv run alembic upgrade head
 
       - name: Upload frontend to server
         run: |
