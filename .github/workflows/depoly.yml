@@ -64,7 +64,9 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.PRIV_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script: whoami
+          script: |
+            ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+            mkdir -p ${{ env.RELEASES_PATH }}/${{ env.BACKEND_DIR }}/1
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
