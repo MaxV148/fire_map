@@ -8,8 +8,8 @@ on:
 env:
   DEPLOY_PATH: /var/www/feurix
   RELEASES_PATH: /var/www/feurix/releases
-  BACKEND_DIR: backend
-  FRONTEND_DIR: frontend
+  BACKEND_DIR: ${{ env.RELEASES_PATH}}/backend/${{ github.GITHUB_RUN_NUMBER }}
+  FRONTEND_DIR: ${{ env.RELEASES_PATH}}/frontend/${{ github.GITHUB_RUN_NUMBER }}
 
 jobs:
   build-backend:
@@ -66,7 +66,8 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
-            mkdir -p ${{ env.RELEASES_PATH }}/${{ env.BACKEND_DIR }}/1
+            mkdir -p ${{ env.BACKEND_DIR }}
+            mkdir -p ${{ env.FRONTEND_DIR }}
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
