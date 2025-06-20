@@ -49,12 +49,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOYER_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ vars.FEURIX_IP }}" >> ~/.ssh/known_hosts
+#      - name: Set up SSH key
+#        run: |
+#          mkdir -p ~/.ssh
+#          echo "${{ secrets.DEPLOYER_SSH_KEY }}" > ~/.ssh/id_ed25519
+#          chmod 600 ~/.ssh/id_ed25519
+#          ssh-keyscan -H "${{ vars.FEURIX_IP }}" >> ~/.ssh/known_hosts
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
