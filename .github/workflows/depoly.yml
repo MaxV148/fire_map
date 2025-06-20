@@ -78,13 +78,21 @@ jobs:
 
       - name: Upload backend to server
         run: |
-          # Write SSH key to file
           echo "${{ secrets.PRIV_KEY }}" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
-          # Upload dist folder to server
-          rsync -avz -e "ssh -i /tmp/deploy_key -p ${{ secrets.SSH_PORT }}" ./backend/dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
-        env:
-          PRIV_KEY: ${{ secrets.PRIV_KEY }}
+      
+          # Sicheres Eintragen des Host-Schlüssels zur Vermeidung von MITM
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+      
+          # Datei-Upload via rsync
+          rsync -avz -e "ssh -i /tmp/deploy_key -p ${{ secrets.SSH_PORT }}" \
+            ./backend/dist/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
+      
+          # Aufräumen
+          rm -f /tmp/deploy_key
+
 
       - name: Install backend dependencies
         uses: appleboy/ssh-action@v1
