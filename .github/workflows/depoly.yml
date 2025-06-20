@@ -56,6 +56,15 @@ jobs:
 #          chmod 600 ~/.ssh/id_ed25519
 #          ssh-keyscan -H "${{ vars.FEURIX_IP }}" >> ~/.ssh/known_hosts
 
+      - name: Execute remote SSH commands using SSH key
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.PRIV_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: whoami
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
