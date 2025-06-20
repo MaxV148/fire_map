@@ -96,17 +96,16 @@ jobs:
           script: |
             cd ${{ env.BACKEND_DIR }}
             
-            # Install uv on server if not available
-            if ! command -v uv &> /dev/null; then
-              curl -LsSf https://astral.sh/uv/install.sh | sh
-              source $HOME/.cargo/env
-            fi
+            # Create Python virtual environment
+            python3 -m venv .venv
             
-            # Install the built wheel from dist folder
-            uv pip install --system dist/*.whl
+            # Activate virtual environment and install wheel
+            source .venv/bin/activate
+            pip install --upgrade pip
+            pip install *.whl
             
             # Run database migrations
-            #uv run alembic upgrade head
+            # alembic upgrade head
 
       - name: Upload frontend to server
         run: |
