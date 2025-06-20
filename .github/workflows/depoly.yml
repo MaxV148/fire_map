@@ -54,7 +54,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOYER_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ vars.FEURIX_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ vars.FEURIX_IP }}" >> ~/.ssh/known_hosts
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -69,7 +69,7 @@ jobs:
       - name: Upload backend to server
         run: |
           RELEASE_DIR=${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }}
-          ssh ${{ secrets.DEPLOY_USER }}@${{ vars.FEURIX_IP }} "
+          ssh "${{ secrets.DEPLOY_USER }}"@"{{ vars.FEURIX_IP }}" 
             mkdir -p $RELEASE_DIR &&
             mkdir -p $RELEASE_DIR/${{ env.BACKEND_DIR }} &&
             mkdir -p $RELEASE_DIR/${{ env.FRONTEND_DIR }}
