@@ -1,0 +1,122 @@
+name: Deploy to Feurix Server
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DEPLOY_PATH: /var/www/feurix
+  RELEASES_PATH: /var/www/feurix/releases
+  BACKEND_DIR: backend
+  FRONTEND_DIR: frontend
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Build backend with uv
+        run: |
+          cd backend
+          uv build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-dist
+          path: backend/dist/
+          retention-days: 1
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: build-backend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOYER_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ vars.FEURIX_IP }} >> ~/.ssh/known_hosts
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-dist
+          path: backend/dist/
+
+      - name: Set up release name
+        id: release
+        run: echo "release_name=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload backend to server
+        run: |
+          RELEASE_DIR=${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }}
+          ssh ${{ secrets.DEPLOY_USER }}@${{ vars.FEURIX_IP }} "
+            mkdir -p $RELEASE_DIR &&
+            mkdir -p $RELEASE_DIR/${{ env.BACKEND_DIR }} &&
+            mkdir -p $RELEASE_DIR/${{ env.FRONTEND_DIR }}
+          "
+          # Upload dist folder to server
+          rsync -avz --delete ./backend/dist/ deployer@your.server.ip:$RELEASE_DIR/${{ env.BACKEND_DIR }}/dist/
+          # Upload other necessary files (pyproject.toml, alembic.ini, etc.)
+          rsync -avz ./backend/pyproject.toml ./backend/alembic.ini ./backend/alembic/ deployer@your.server.ip:$RELEASE_DIR/${{ env.BACKEND_DIR }}/
+
+      - name: Install backend dependencies & restart backend
+        run: |
+          ssh deployer@your.server.ip << 'EOF'
+            set -e
+            cd ${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }}/${{ env.BACKEND_DIR }}
+            
+            # Install uv on server if not available
+            if ! command -v uv &> /dev/null; then
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              source $HOME/.cargo/env
+            fi
+            
+            # Install the built wheel from dist folder
+            uv pip install --system dist/*.whl
+            
+            # Run database migrations
+            uv run alembic upgrade head
+          EOF
+
+      - name: Upload frontend to server
+        run: |
+          RELEASE_DIR=${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }}
+          # Upload frontend files
+          rsync -avz --delete ./frontend/ deployer@your.server.ip:$RELEASE_DIR/${{ env.FRONTEND_DIR }}
+
+      - name: Build React frontend
+        run: |
+          ssh deployer@your.server.ip << 'EOF'
+            set -e
+            cd ${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }}/${{ env.FRONTEND_DIR }}
+            npm install
+            npm run build
+            sudo rm -rf /var/www/html/*
+            sudo cp -r build/* /var/www/html/
+          EOF
+
+      - name: Update current symlink
+        run: |
+          ssh deployer@your.server.ip << 'EOF'
+            ln -sfn ${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }} /var/www/feurix/current
+          EOF
