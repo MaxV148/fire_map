@@ -71,10 +71,15 @@ jobs:
             mkdir -p ${{ env.BACKEND_DIR }}
             mkdir -p ${{ env.FRONTEND_DIR }}
 
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+
       - name: Upload backend to server
         run: |
           # Upload dist folder to server
-          rsync -avz  ./backend/dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
+          rsync -avz -e "ssh -i ${{ secrets.PRIV_KEY }} -p ${{ secrets.SSH_PORT }}" ./backend/dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
           # Upload other necessary files
           #rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./backend/pyproject.toml ./backend/alembic.ini ./backend/alembic/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/
 
