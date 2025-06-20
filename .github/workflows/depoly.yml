@@ -8,8 +8,6 @@ on:
 env:
   DEPLOY_PATH: /var/www/feurix
   RELEASES_PATH: /var/www/feurix/releases
-  BACKEND_DIR: ${{ env.RELEASES_PATH}}/backend/${{ github.GITHUB_RUN_NUMBER }}
-  FRONTEND_DIR: ${{ env.RELEASES_PATH}}/frontend/${{ github.GITHUB_RUN_NUMBER }}
 
 jobs:
   build-backend:
@@ -50,24 +48,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-#      - name: Set up SSH key
-#        run: |
-#          mkdir -p ~/.ssh
-#          echo "${{ secrets.DEPLOYER_SSH_KEY }}" > ~/.ssh/id_ed25519
-#          chmod 600 ~/.ssh/id_ed25519
-#          ssh-keyscan -H "${{ vars.FEURIX_IP }}" >> ~/.ssh/known_hosts
-
-      - name: Execute remote SSH commands using SSH key
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.PRIV_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
-            mkdir -p ${{ env.BACKEND_DIR }}
-            mkdir -p ${{ env.FRONTEND_DIR }}
+      - name: Set up deployment variables
+        run: |
+          echo "RELEASE_NAME=$(date +%s)" >> $GITHUB_ENV
+          echo "BACKEND_DIR=${{ env.RELEASES_PATH }}/backend-${{ github.run_number }}" >> $GITHUB_ENV
+          echo "FRONTEND_DIR=${{ env.RELEASES_PATH }}/frontend-${{ github.run_number }}" >> $GITHUB_ENV
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -75,28 +60,33 @@ jobs:
           name: backend-dist
           path: backend/dist/
 
-      - name: Set up release name
-        id: release
-        run: echo "release_name=$(date +%s)" >> "$GITHUB_OUTPUT"
+      - name: Create directories on server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.PRIV_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            mkdir -p ${{ env.BACKEND_DIR }}
+            mkdir -p ${{ env.FRONTEND_DIR }}
 
       - name: Upload backend to server
         run: |
-          RELEASE_DIR=${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }}
-          ssh "${{ secrets.DEPLOY_USER }}"@"{{ vars.FEURIX_IP }}" 
-            mkdir -p $RELEASE_DIR &&
-            mkdir -p $RELEASE_DIR/${{ env.BACKEND_DIR }} &&
-            mkdir -p $RELEASE_DIR/${{ env.FRONTEND_DIR }}
-          "
           # Upload dist folder to server
-          rsync -avz --delete ./backend/dist/ deployer@your.server.ip:$RELEASE_DIR/${{ env.BACKEND_DIR }}/dist/
-          # Upload other necessary files (pyproject.toml, alembic.ini, etc.)
-          rsync -avz ./backend/pyproject.toml ./backend/alembic.ini ./backend/alembic/ deployer@your.server.ip:$RELEASE_DIR/${{ env.BACKEND_DIR }}/
+          rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./backend/dist/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/dist/
+          # Upload other necessary files
+          rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./backend/pyproject.toml ./backend/alembic.ini ./backend/alembic/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.BACKEND_DIR }}/
 
-      - name: Install backend dependencies & restart backend
-        run: |
-          ssh deployer@your.server.ip << 'EOF'
-            set -e
-            cd ${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }}/${{ env.BACKEND_DIR }}
+      - name: Install backend dependencies
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.PRIV_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ env.BACKEND_DIR }}
             
             # Install uv on server if not available
             if ! command -v uv &> /dev/null; then
@@ -109,27 +99,32 @@ jobs:
             
             # Run database migrations
             uv run alembic upgrade head
-          EOF
 
       - name: Upload frontend to server
         run: |
-          RELEASE_DIR=${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }}
           # Upload frontend files
-          rsync -avz --delete ./frontend/ deployer@your.server.ip:$RELEASE_DIR/${{ env.FRONTEND_DIR }}
+          rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./frontend/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.FRONTEND_DIR }}
 
       - name: Build React frontend
-        run: |
-          ssh deployer@your.server.ip << 'EOF'
-            set -e
-            cd ${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }}/${{ env.FRONTEND_DIR }}
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.PRIV_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ env.FRONTEND_DIR }}
             npm install
             npm run build
             sudo rm -rf /var/www/html/*
             sudo cp -r build/* /var/www/html/
-          EOF
 
       - name: Update current symlink
-        run: |
-          ssh deployer@your.server.ip << 'EOF'
-            ln -sfn ${{ env.RELEASES_PATH }}/${{ steps.release.outputs.release_name }} /var/www/feurix/current
-          EOF
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.PRIV_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            ln -sfn ${{ env.RELEASE_DIR }} /var/www/feurix/current
