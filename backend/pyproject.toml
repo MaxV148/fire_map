@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "backend"
@@ -9,30 +9,36 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi[standard]>=0.115.12",
-    "pydantic==2.10.6",
-    "pydantic-settings==2.7.1",
-    "alembic==1.14.1",
-    "psycopg[binary,pool]==3.2.4",
-    "loguru==0.7.3",
-    "shapely==2.0.7",
-    "bcrypt==4.2.1",
-    "sqlalchemy==2.0.38",
-    "GeoAlchemy2==0.17.1",
-    "pyotp==2.9.0",
-    "qrcode[pil]==7.4.2",
-    "gunicorn>=23.0.0",
-    "fastapi-mail>=1.5.0",
-    "redis>=6.2.0",
+  "fastapi[standard]>=0.115.12",
+  "pydantic==2.10.6",
+  "pydantic-settings==2.7.1",
+  "alembic==1.14.1",
+  "psycopg[binary,pool]==3.2.4",
+  "loguru==0.7.3",
+  "shapely==2.0.7",
+  "bcrypt==4.2.1",
+  "sqlalchemy==2.0.38",
+  "GeoAlchemy2==0.17.1",
+  "pyotp==2.9.0",
+  "qrcode[pil]==7.4.2",
+  "gunicorn>=23.0.0",
+  "fastapi-mail>=1.5.0",
+  "redis>=6.2.0"
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["app*"]
-exclude = ["tests*"]
+[tool.hatch.build]
+include = [
+  "app/**",
+  "alembic/**",
+  "alembic.ini",
+  "README.md"
+]
 
-[dependency-groups]
-dev = [
-    "pytest>=8.4.0",
-    "ruff>=0.11.11",
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.envs.default]
+dependencies = [
+  "pytest>=8.4.0",
+  "ruff>=0.11.11"
 ]

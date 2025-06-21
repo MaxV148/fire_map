@@ -97,12 +97,11 @@ jobs:
             cd ${{ env.BACKEND_DIR }}
             
             # Create Python virtual environment
-            python3 -m venv .venv
+            uv venv
             
             # Activate virtual environment and install wheel
             source .venv/bin/activate
-            pip install --upgrade pip
-            pip install *.whl
+            uv pip install *.whl 
             
             # Run database migrations
             # alembic upgrade head
