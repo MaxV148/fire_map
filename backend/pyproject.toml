@@ -31,7 +31,8 @@ include = [
   "app/**",
   "alembic/**",
   "alembic.ini",
-  "README.md"
+  "README.md",
+  "mail_templates"
 ]
 
 [tool.hatch.metadata]

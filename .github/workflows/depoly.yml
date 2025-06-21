@@ -102,6 +102,7 @@ jobs:
             # Activate virtual environment and install wheel
             source .venv/bin/activate
             uv pip install *.whl 
+            tar -xzf *.tar.gz --strip-components=1
             
             # Run database migrations
             # alembic upgrade head
