@@ -51,8 +51,9 @@ jobs:
       - name: Set up deployment variables
         run: |
           echo "RELEASE_NAME=$(date +%s)" >> $GITHUB_ENV
-          echo "BACKEND_DIR=${{ env.RELEASES_PATH }}/${{ github.run_number }}/backend" >> $GITHUB_ENV
-          echo "FRONTEND_DIR=${{ env.RELEASES_PATH }}/${{ github.run_number }}/frontend" >> $GITHUB_ENV
+          echo "BASE_RELEASE_PATH=${{ env.RELEASES_PATH }}/${{ github.run_number }}"
+          echo "BACKEND_DIR=${{ env.BASE_RELEASE_PATH }}/backend" >> $GITHUB_ENV
+          echo "FRONTEND_DIR=${{ env.BASE_RELEASE_PATH }}/frontend" >> $GITHUB_ENV
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -70,7 +71,8 @@ jobs:
           script: |
             mkdir -p ${{ env.BACKEND_DIR }}
             mkdir -p ${{ env.FRONTEND_DIR }}
-
+            ln -s ${{ env.BASE_RELEASE_PATH }} current
+            
 
       - name: Upload backend to server
         run: |
@@ -126,31 +128,22 @@ jobs:
             # Run database migrations
             # alembic upgrade head
 
-      - name: Upload frontend to server
-        run: |
-          # Upload frontend files
-          rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./frontend/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.FRONTEND_DIR }}
+#      - name: Upload frontend to server
+#        run: |
+#          # Upload frontend files
+#          rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./frontend/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.FRONTEND_DIR }}
+#
+#      - name: Build React frontend
+#        uses: appleboy/ssh-action@v1
+#        with:
+#          host: ${{ secrets.HOST }}
+#          username: ${{ secrets.DEPLOY_USER }}
+#          key: ${{ secrets.PRIV_KEY }}
+#          port: ${{ secrets.SSH_PORT }}
+#          script: |
+#            cd ${{ env.FRONTEND_DIR }}
+#            npm install
+#            npm run build
+#            sudo rm -rf /var/www/html/*
+#            sudo cp -r build/* /var/www/html/
 
-      - name: Build React frontend
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.PRIV_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            cd ${{ env.FRONTEND_DIR }}
-            npm install
-            npm run build
-            sudo rm -rf /var/www/html/*
-            sudo cp -r build/* /var/www/html/
-
-      - name: Update current symlink
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.PRIV_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            ln -sfn ${{ env.RELEASE_DIR }} /var/www/feurix/current
