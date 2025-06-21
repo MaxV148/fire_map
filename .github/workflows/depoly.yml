@@ -51,7 +51,7 @@ jobs:
       - name: Set up deployment variables
         run: |
           echo "RELEASE_NAME=$(date +%s)" >> $GITHUB_ENV
-          echo "BASE_RELEASE_PATH=${{ env.RELEASES_PATH }}/${{ github.run_number }}"
+          echo "BASE_RELEASE_PATH=${{ env.RELEASES_PATH }}/${{ github.run_number }}" >> $GITHUB_ENV
           echo "BACKEND_DIR=${{ env.BASE_RELEASE_PATH }}/backend" >> $GITHUB_ENV
           echo "FRONTEND_DIR=${{ env.BASE_RELEASE_PATH }}/frontend" >> $GITHUB_ENV
 
