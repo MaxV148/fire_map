@@ -71,6 +71,7 @@ jobs:
           script: |
             mkdir -p ${{ env.BACKEND_DIR }}
             mkdir -p ${{ env.FRONTEND_DIR }}
+            cd ${{ env.RELEASES_PATH }}
             ln -sf ${{ env.BASE_RELEASE_PATH }} current
             
 
