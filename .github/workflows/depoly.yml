@@ -93,11 +93,30 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.PRIV_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          command_timeout: 30m
           script: |
+            # Source shell profiles to load PATH and other environment variables
+            source ~/.bashrc 2>/dev/null || true
+            source ~/.profile 2>/dev/null || true
+            source ~/.bash_profile 2>/dev/null || true
+            
+            # Alternative: Load pyenv if available
+            if [ -d "$HOME/.pyenv" ]; then
+              export PYENV_ROOT="$HOME/.pyenv"
+              export PATH="$PYENV_ROOT/bin:$PATH"
+              eval "$(pyenv init --path)" 2>/dev/null || true
+              eval "$(pyenv init -)" 2>/dev/null || true
+            fi
+            
             cd ${{ env.BACKEND_DIR }}
             
+            # Debug: Show current environment
+            echo "Current PATH: $PATH"
+            echo "Python version: $(python3 --version 2>/dev/null || echo 'Python not found')"
+            echo "UV location: $(which uv 2>/dev/null || echo 'UV not found')"
+            
             # Create Python virtual environment
-            /home/deployer/.local/bin/uv venv
+            uv venv
             
             # Activate virtual environment and install wheel
             source .venv/bin/activate
