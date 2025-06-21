@@ -94,6 +94,7 @@ jobs:
           key: ${{ secrets.PRIV_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
+            source ~/.bashrc || source ~/.profile || true
             cd ${{ env.BACKEND_DIR }}
             
             # Create Python virtual environment
