@@ -71,7 +71,7 @@ jobs:
           script: |
             mkdir -p ${{ env.BACKEND_DIR }}
             mkdir -p ${{ env.FRONTEND_DIR }}
-            ln -s ${{ env.BASE_RELEASE_PATH }} current
+            ln -sf ${{ env.BASE_RELEASE_PATH }} current
             
 
       - name: Upload backend to server
