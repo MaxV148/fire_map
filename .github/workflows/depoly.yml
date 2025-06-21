@@ -94,15 +94,14 @@ jobs:
           key: ${{ secrets.PRIV_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            source ~/.bashrc || source ~/.profile || true
             cd ${{ env.BACKEND_DIR }}
             
             # Create Python virtual environment
-            uv venv
+            /home/deployer/.local/bin/uv venv
             
             # Activate virtual environment and install wheel
             source .venv/bin/activate
-            uv pip install *.whl 
+            /home/deployer/.local/bin/uv pip install *.whl 
             tar -xzf *.tar.gz --strip-components=1
             
             # Run database migrations
