@@ -7,7 +7,7 @@ on:
 
 env:
   DEPLOY_PATH: /var/www/feurix
-  RELEASES_PATH: /var/www/feurixx/releases
+  RELEASES_PATH: /var/www/feurix/releases
 
 jobs:
   build-backend:
