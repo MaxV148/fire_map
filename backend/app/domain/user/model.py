@@ -49,8 +49,8 @@ class User(Base):
 
     # Relationships
     role = relationship("Role", back_populates="users")
-    events = relationship("Event", back_populates="user")
-    issues = relationship("Issue", back_populates="user")
+    events = relationship("Event", back_populates="user", lazy="dynamic")
+    issues = relationship("Issue", back_populates="user", lazy="dynamic")
     otp_settings = relationship(
         "OtpSettings",
         uselist=False,

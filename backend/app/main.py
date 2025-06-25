@@ -28,73 +28,73 @@ from starlette.types import ASGIApp
 config = get_config()
 
 
-async def setup_initial_admin():
-    """Setup initial admin user if it doesn't exist"""
-    db = SessionLocal()
-    try:
-        user_repo = UserRepository(db)
-        role_repo = RoleRepository(db)
-        
-        # Check if admin user already exists
-        existing_admin = user_repo.get_user_by_email(config.initial_admin_email)
-        if existing_admin:
-            loguru.logger.info("Admin user already exists")
-            return
-        
-        # Check if admin role exists, create if not
-        admin_role = role_repo.get_by_name("admin")
-        if not admin_role:
-            loguru.logger.info("Creating admin role")
-            from domain.role.dto import RoleCreate
-            admin_role_data = RoleCreate(
-                name="admin",
-                description="Administrator role with full access"
-            )
-            admin_role = role_repo.create(admin_role_data)
-        # Check if user role exists, create if not
-        user_role = role_repo.get_by_name("user")
-        if not user_role:
-            loguru.logger.info("Creating user role")
-            user_role_data = RoleCreate(
-                name="user",
-                description="Standard user role with limited access"
-            )
-            user_role = role_repo.create(user_role_data)
-        
-        # Create admin user
-        loguru.logger.info(f"Creating initial admin user: {config.initial_admin_email}")
-        hashed_password = hash_password(config.initial_admin_password)
-        
-        admin_user = User(
-            email=config.initial_admin_email,
-            first_name="Admin",
-            last_name="User",
-            password=hashed_password,
-            role_id=admin_role.id
-        )
-        
-        user_repo.create_user(admin_user)
-        loguru.logger.info("Initial admin user created successfully")
-        
-    except Exception as e:
-        loguru.logger.error(f"Error setting up initial admin: {e}")
-        db.rollback()
-        raise
-    finally:
-        db.close()
+# async def setup_initial_admin():
+#     """Setup initial admin user if it doesn't exist"""
+#     db = SessionLocal()
+#     try:
+#         user_repo = UserRepository(db)
+#         role_repo = RoleRepository(db)
+#
+#         # Check if admin user already exists
+#         existing_admin = user_repo.get_user_by_email(config.initial_admin_email)
+#         if existing_admin:
+#             loguru.logger.info("Admin user already exists")
+#             return
+#
+#         # Check if admin role exists, create if not
+#         admin_role = role_repo.get_by_name("admin")
+#         if not admin_role:
+#             loguru.logger.info("Creating admin role")
+#             from domain.role.dto import RoleCreate
+#             admin_role_data = RoleCreate(
+#                 name="admin",
+#                 description="Administrator role with full access"
+#             )
+#             admin_role = role_repo.create(admin_role_data)
+#         # Check if user role exists, create if not
+#         user_role = role_repo.get_by_name("user")
+#         if not user_role:
+#             loguru.logger.info("Creating user role")
+#             user_role_data = RoleCreate(
+#                 name="user",
+#                 description="Standard user role with limited access"
+#             )
+#             user_role = role_repo.create(user_role_data)
+#
+#         # Create admin user
+#         loguru.logger.info(f"Creating initial admin user: {config.initial_admin_email}")
+#         hashed_password = hash_password(config.initial_admin_password)
+#
+#         admin_user = User(
+#             email=config.initial_admin_email,
+#             first_name="Admin",
+#             last_name="User",
+#             password=hashed_password,
+#             role_id=admin_role.id
+#         )
+#
+#         user_repo.create_user(admin_user)
+#         loguru.logger.info("Initial admin user created successfully")
+#
+#     except Exception as e:
+#         loguru.logger.error(f"Error setting up initial admin: {e}")
+#         db.rollback()
+#         raise
+#     finally:
+#         db.close()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    loguru.logger.info("Starting application...")
-    await setup_initial_admin()
-    yield
-    # Shutdown
-    loguru.logger.info("Shutting down application...")
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     # Startup
+#     loguru.logger.info("Starting application...")
+#     await setup_initial_admin()
+#     yield
+#     # Shutdown
+#     loguru.logger.info("Shutting down application...")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 PUBLIC_ROUTES = ["/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/status"]
 PUBLIC_ROUTES_DEV = ["/docs", "/openapi.json"]
