@@ -14,12 +14,6 @@ from domain.auth.routes import auth_router
 from domain.invite.routes import invite_router
 from config.config_provider import get_config
 from infrastructure.redis.redis_client import session_manager
-from infrastructure.postgresql.db import SessionLocal
-from domain.user.repository import UserRepository
-from domain.role.repository import RoleRepository
-from domain.user.model import User
-from domain.role.model import Role
-from domain.auth.service import hash_password
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from starlette.requests import Request
