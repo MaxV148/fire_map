@@ -90,6 +90,8 @@ jobs:
           rm -f /tmp/deploy_key
 
       - name: Install backend dependencies
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.HOST }}
@@ -128,6 +130,9 @@ jobs:
             
             # Run database migrations
             # alembic upgrade head
+            
+            #restart systemd service
+            sudo systemctl restart feurix-backend.service
 
 #      - name: Upload frontend to server
 #        run: |
