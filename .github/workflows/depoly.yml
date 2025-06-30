@@ -135,22 +135,28 @@ jobs:
             #restart systemd service
             sudo systemctl restart feurix-backend.service
 
-#      - name: Upload frontend to server
-#        run: |
-#          # Upload frontend files
-#          rsync -avz -e "ssh -p ${{ secrets.SSH_PORT }}" ./frontend/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.FRONTEND_DIR }}
-#
-#      - name: Build React frontend
-#        uses: appleboy/ssh-action@v1
-#        with:
-#          host: ${{ secrets.HOST }}
-#          username: ${{ secrets.DEPLOY_USER }}
-#          key: ${{ secrets.PRIV_KEY }}
-#          port: ${{ secrets.SSH_PORT }}
-#          script: |
-#            cd ${{ env.FRONTEND_DIR }}
-#            npm install
-#            npm run build
-#            sudo rm -rf /var/www/html/*
-#            sudo cp -r build/* /var/www/html/
+      - name: Upload frontend to server
+        run: |
+          echo "${{ secrets.PRIV_KEY }}" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+      
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+          
+          # Upload frontend files
+          rsync -avz -e "ssh  -i /tmp/deploy_key -p ${{ secrets.SSH_PORT }}" ./frontend/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.FRONTEND_DIR }}
+
+      - name: Build React frontend
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.PRIV_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ env.FRONTEND_DIR }}
+            npm install
+            npm run build
+            sudo rm -rf /var/www/html/*
+            sudo cp -r build/* /var/www/html/
 
