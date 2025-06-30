@@ -39,10 +39,41 @@ jobs:
           path: backend/dist/
           retention-days: 1
 
+  build-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/build/
+          retention-days: 1
+
   deploy-backend:
     runs-on: ubuntu-latest
     environment: deployment
-    needs: build-backend
+    needs: [build-backend, build-frontend]
     
     steps:
       - name: Checkout code
@@ -55,11 +86,17 @@ jobs:
           echo "BACKEND_DIR=${{ env.RELEASES_PATH }}/${{ github.run_number }}/backend" >> $GITHUB_ENV
           echo "FRONTEND_DIR=${{ env.RELEASES_PATH }}/${{ github.run_number }}/frontend" >> $GITHUB_ENV
 
-      - name: Download build artifacts
+      - name: Download backend artifacts
         uses: actions/download-artifact@v4
         with:
           name: backend-dist
           path: backend/dist/
+
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/build/
 
       - name: Create directories on server
         uses: appleboy/ssh-action@v1
@@ -135,7 +172,7 @@ jobs:
             #restart systemd service
             sudo systemctl restart feurix-backend.service
 
-      - name: Upload frontend to server
+      - name: Deploy frontend to server
         run: |
           echo "${{ secrets.PRIV_KEY }}" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
@@ -143,20 +180,10 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.HOST }} >> ~/.ssh/known_hosts
           
-          # Upload frontend files
-          rsync -avz -e "ssh  -i /tmp/deploy_key -p ${{ secrets.SSH_PORT }}" ./frontend/ ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.FRONTEND_DIR }}
-
-      - name: Build React frontend
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.PRIV_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            cd ${{ env.FRONTEND_DIR }}
-            npm install
-            npm run build
-            sudo rm -rf /var/www/html/*
-            sudo cp -r build/* /var/www/html/
+          # Upload built frontend files directly to web root
+          rsync -avz -e "ssh -i /tmp/deploy_key -p ${{ secrets.SSH_PORT }}" \
+            ./frontend/build/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:/var/www/html/
+          
+          rm -f /tmp/deploy_key
 
