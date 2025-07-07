@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Input, Button, Select, Popconfirm, message } from 'antd';
-import { Tag, VehicleType, Event, EventUpdateInput, Issue } from '../../utils/types';
+import { Event, EventUpdateInput, Issue } from '../../utils/types';
 import { useTagStore } from '../../store/tagStore';
 import { useVehicleStore } from '../../store/vehicleStore';
 import { useEventStore } from '../../store/eventStore';

@@ -14,7 +14,7 @@ interface TagStore {
     clearTags: () => void;
 }
 
-export const useTagStore = create<TagStore>((set, get) => ({
+export const useTagStore = create<TagStore>((set) => ({
     tags: [],
     isLoading: false,
     error: null,

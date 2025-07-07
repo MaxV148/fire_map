@@ -7,7 +7,7 @@ import { User, UserRole } from '../utils/types';
 
 const UsersPage: React.FC = () => {
     const { users, isLoading, error, fetchUsers, deleteUser, updateUserRole } = useAdminUserStore();
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
 
     useEffect(() => {
         fetchUsers();

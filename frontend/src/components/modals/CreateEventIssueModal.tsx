@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Button, Select, Tabs, message, Radio, Space } from 'antd';
-import { Tag, VehicleType } from '../../utils/types';
+import { Modal, Form, Input, Button, Select, Tabs, message, Space } from 'antd';
+
 import { useTagStore } from '../../store/tagStore';
 import { useVehicleStore } from '../../store/vehicleStore';
 import { useEventStore } from '../../store/eventStore';

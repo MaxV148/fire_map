@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Card, Button, Typography, Space, Tooltip, Tag } from 'antd';
-import * as Icons from '@ant-design/icons';
+import { Card, Button, Typography, Space, Tag } from 'antd';
+
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEventStore } from '../store/eventStore';
@@ -40,7 +40,7 @@ const issueIcon = L.icon({
   className: 'issue-marker' // CSS-Klasse für benutzerdefiniertes Styling
 });
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 interface MapProps {
   center?: [number, number];
@@ -66,8 +66,8 @@ export const LocationMap: React.FC<MapProps> = ({
   const { mode } = useTheme();
 
   // Events und Issues aus den Stores holen
-  const { events, fetchEvents, isLoading: eventsLoading } = useEventStore();
-  const { issues, fetchIssues, isLoading: issuesLoading } = useIssueStore();
+  const { events, fetchEvents } = useEventStore();
+  const { issues, fetchIssues } = useIssueStore();
 
   // Icon für alle Marker setzen
   useEffect(() => {

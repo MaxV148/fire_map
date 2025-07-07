@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, List, Tabs, Tag, Typography, Space, Badge, Empty, Form, Modal, Button, message, Divider } from 'antd';
+import { Card, List, Tabs, Tag, Typography, Space, Badge, Empty, Form, Button, message } from 'antd';
 import * as Icons from '@ant-design/icons';
 import { FilterValues } from './FilterPanel';
 import EditEventIssueModal from './modals/EditEventIssueModal';
@@ -10,7 +10,7 @@ import { useIssueStore } from "../store/issueStore.ts";
 import { Event, Issue } from '../utils/types.ts'
 import { useTheme } from '../contexts/ThemeContext'; 
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { TabPane } = Tabs;
 
 interface EventsIssuesListProps {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Steps, Button, Input, message, Typography, Spin, Space } from 'antd';
+import { Modal, Steps, Button, Input, message, Typography, Spin } from 'antd';
 import { QrcodeOutlined, SafetyOutlined } from '@ant-design/icons';
 import authService from '../../services/authService';
 

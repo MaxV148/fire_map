@@ -2,7 +2,7 @@ import { Event, EventUpdateInput } from '../utils/types';
 import { create } from 'zustand';
 import { apiClient } from '../utils/api';
 import { useFilterStore } from './filterStore';
-import dayjs from 'dayjs';
+
 
 interface EventCreateInput {
     name: string;
@@ -24,7 +24,7 @@ interface EventStore {
     clearEvents: () => void;
 }
 
-export const useEventStore = create<EventStore>((set, get) => ({
+export const useEventStore = create<EventStore>((set) => ({
     events: [],
     isLoading: false,
     error: null,
@@ -37,20 +37,17 @@ export const useEventStore = create<EventStore>((set, get) => ({
             // Build query parameters
             const params = new URLSearchParams();
             
-            if (filters.eventType && filters.eventType.length > 0) {
-                params.append('vehicle_ids', filters.eventType.join(','));
+            if (filters.vehicles && filters.vehicles.length > 0) {
+                params.append('vehicle_ids', filters.vehicles.join(','));
             }
             
             if (filters.tags && filters.tags.length > 0) {
                 params.append('tag_ids', filters.tags.join(','));
             }
             
-            if (filters.startDate) {
-                params.append('start_date', filters.startDate);
-            }
-            
-            if (filters.endDate) {
-                params.append('end_date', filters.endDate);
+            if (filters.dateRange && filters.dateRange.length === 2) {
+                params.append('start_date', filters.dateRange[0].format('YYYY-MM-DD'));
+                params.append('end_date', filters.dateRange[1].format('YYYY-MM-DD'));
             }
 
             const queryString = params.toString();

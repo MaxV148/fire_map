@@ -1,4 +1,4 @@
-import { User, UserRole } from '../utils/types';
+import { User } from '../utils/types';
 import { create } from 'zustand';
 import { apiClient } from '../utils/api';
 

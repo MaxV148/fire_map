@@ -9,7 +9,7 @@ import { useFilterStore } from '../store/filterStore';
 import { useEventStore } from '../store/eventStore';
 import { useTheme } from '../contexts/ThemeContext';
 
-const { Text, Title } = Typography;
+const { Title } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 

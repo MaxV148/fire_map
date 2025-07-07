@@ -73,7 +73,7 @@ const InvitationPage: React.FC = () => {
             } else {
                 message.error('Fehler beim Versenden der Einladung');
             }
-        } catch (error) {
+        } catch {
             message.error('Fehler beim Versenden der Einladung');
         } finally {
             setIsCreating(false);
@@ -89,7 +89,7 @@ const InvitationPage: React.FC = () => {
             } else {
                 message.error('Fehler beim Löschen der Einladung');
             }
-        } catch (error) {
+        } catch {
             message.error('Fehler beim Löschen der Einladung');
         }
     };

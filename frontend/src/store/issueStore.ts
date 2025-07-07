@@ -1,4 +1,4 @@
-import { Issue, Tag } from '../utils/types';
+import { Issue } from '../utils/types';
 import { create } from 'zustand';
 import { apiClient } from '../utils/api';
 
@@ -30,7 +30,7 @@ interface IssueStore {
     clearIssues: () => void;
 }
 
-export const useIssueStore = create<IssueStore>((set, get) => ({
+export const useIssueStore = create<IssueStore>((set) => ({
     issues: [],
     isLoading: false,
     error: null,

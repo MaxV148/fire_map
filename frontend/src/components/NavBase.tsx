@@ -1,5 +1,5 @@
 import React from 'react';
-import {Badge, Button, Col, Divider, Dropdown, Layout, Menu, Row, Space, Typography} from "antd";
+import {Badge, Button, Col, Dropdown, Layout, Menu, Row, Space, Typography} from "antd";
 import * as Icons from '@ant-design/icons';
 import {useUserStore} from "../store/userStore.ts";
 import {useNavigate} from "react-router-dom";

@@ -3,23 +3,19 @@ import dayjs from 'dayjs';
 import { persist } from 'zustand/middleware';
 import { FilterValues } from '../components/FilterPanel';
 
-interface FilterState extends FilterValues {
-  // 'view' wurde entfernt
-}
-
 interface FilterStore {
   // Zustand
-  filters: FilterState;
+  filters: FilterValues;
 
   // Aktionen
-  setFilters: (filters: Partial<FilterState>) => void;
+  setFilters: (filters: Partial<FilterValues>) => void;
   resetFilters: () => void;
   setDateRange: (dateRange: [dayjs.Dayjs, dayjs.Dayjs] | null) => void;
   setTags: (tags: number[]) => void;
   setVehicles: (vehicles: number[]) => void;
 }
 
-const initialState: FilterState = {
+const initialState: FilterValues = {
   dateRange: null,
   tags: [],
   vehicles: []

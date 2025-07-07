@@ -36,7 +36,7 @@ export interface RegisterData {
 
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user_profile';
-const IDLE_TIMEOUT_KEY = 'idle_timeout';
+
 
 // Default idle timeout in milliseconds (15 minutes)
 const DEFAULT_IDLE_TIMEOUT = 15 * 60 * 1000;

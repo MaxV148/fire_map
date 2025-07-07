@@ -14,7 +14,7 @@ interface VehicleStore {
     clearVehicles: () => void;
 }
 
-export const useVehicleStore = create<VehicleStore>((set, get) => ({
+export const useVehicleStore = create<VehicleStore>((set) => ({
     vehicles: [],
     isLoading: false,
     error: null,

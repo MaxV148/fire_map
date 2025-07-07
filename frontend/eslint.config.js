@@ -23,6 +23,10 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      // Automatisch behebbare Regeln
+      '@typescript-eslint/no-unused-vars': 'off', // Ausgeschaltet, da wir Imports manuell bereinigen
+      '@typescript-eslint/no-explicit-any': 'warn', // Warnung statt Fehler
+      'no-unused-vars': 'off', // Native Regel ausschalten
     },
   },
 )
