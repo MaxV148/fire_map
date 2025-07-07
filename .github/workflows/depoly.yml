@@ -68,7 +68,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: frontend/build/
+          path: frontend/dist/
           retention-days: 1
 
   deploy-backend:
@@ -97,7 +97,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
-          path: frontend/build/
+          path: frontend/dist/
 
       - name: Create directories on server
         uses: appleboy/ssh-action@v1
@@ -192,7 +192,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
-          path: frontend/build/
+          path: frontend/dist/
 
       - name: Upload frontend to server
         run: |
@@ -203,7 +203,7 @@ jobs:
           ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.HOST }} >> ~/.ssh/known_hosts
       
           rsync -avz -e "ssh -i /tmp/deploy_key -p ${{ secrets.SSH_PORT }}" \
-            ./frontend/build/ \
+            ./frontend/dist/ \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.FRONTEND_DIR }}
       
           rm -f /tmp/deploy_key
