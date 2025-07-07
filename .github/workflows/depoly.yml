@@ -173,18 +173,49 @@ jobs:
             #restart systemd service
             sudo systemctl restart feurix-backend.service
 
-      - name: Deploy frontend to server
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    environment: deployment
+    needs: [build-frontend, deploy-backend]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up deployment variables
+        run: |
+          echo "RELEASE_NAME=$(date +%s)" >> $GITHUB_ENV
+          echo "BASE_RELEASE_PATH=${{ env.RELEASES_PATH }}/${{ github.run_number }}" >> $GITHUB_ENV
+          echo "FRONTEND_DIR=${{ env.RELEASES_PATH }}/${{ github.run_number }}/frontend" >> $GITHUB_ENV
+
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/build/
+
+      - name: Upload frontend to server
         run: |
           echo "${{ secrets.PRIV_KEY }}" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
       
           mkdir -p ~/.ssh
           ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.HOST }} >> ~/.ssh/known_hosts
-          
-          # Upload built frontend files directly to web root
+      
           rsync -avz -e "ssh -i /tmp/deploy_key -p ${{ secrets.SSH_PORT }}" \
             ./frontend/build/ \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:/var/www/html/
-          
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.HOST }}:${{ env.FRONTEND_DIR }}
+      
           rm -f /tmp/deploy_key
+
+      - name: Set up nginx configuration
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.PRIV_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            # Restart nginx to serve the new frontend files
+            sudo systemctl reload nginx
 
