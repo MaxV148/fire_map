@@ -1,18 +1,43 @@
 import {Col, Row, Space} from 'antd';
-import React from 'react';
+import React, { useState } from 'react';
 import LocationMap from '../components/map';
 import EventsIssuesList from "../components/EventsIssuesList.tsx";
 import FilterPanel, {FilterValues} from '../components/FilterPanel.tsx';
 import NavBase from "../components/NavBase.tsx";
+import CreateEventIssueModal from '../components/modals/CreateEventIssueModal.tsx';
 
 
 const DashBoard: React.FC = () => {
     const [filters, setFilters] = React.useState<FilterValues>({
         view: 'both'
     });
+    
+    // State für das Modal
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [modalInitialLocation, setModalInitialLocation] = useState<[number, number] | undefined>(undefined);
+
     const handleFilterChange = (newFilters: FilterValues) => {
         setFilters(newFilters);
     };
+
+    // Handler für Karten-Klicks
+    const handleMapClick = (lat: number, lng: number) => {
+        setModalInitialLocation([lat, lng]);
+        setIsModalVisible(true);
+    };
+
+    // Handler für Modal-Events
+    const handleModalSuccess = () => {
+        setIsModalVisible(false);
+        setModalInitialLocation(undefined);
+        // Events/Issues neu laden - wird automatisch durch die Stores gemacht
+    };
+
+    const handleModalCancel = () => {
+        setIsModalVisible(false);
+        setModalInitialLocation(undefined);
+    };
+
     const dashboard = <>
         <Space
             size="middle"
@@ -33,6 +58,7 @@ const DashBoard: React.FC = () => {
                             description: "Hauptstadt von Bayern"
                         }
                     ]}
+                    onMapClick={handleMapClick}
                 />
             </Col>
         </Row>
@@ -46,6 +72,14 @@ const DashBoard: React.FC = () => {
                 <EventsIssuesList filters={filters}/>
             </Col>
         </Row>
+
+        {/* Modal für Event/Issue-Erstellung */}
+        <CreateEventIssueModal
+            visible={isModalVisible}
+            onCancel={handleModalCancel}
+            onSuccess={handleModalSuccess}
+            initialLocation={modalInitialLocation}
+        />
     </>
     return (
         <NavBase content={dashboard}/>

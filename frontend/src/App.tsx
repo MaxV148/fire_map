@@ -6,6 +6,8 @@ import DashBoard from "./pages/DashBoard.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
 import UsersPage from "./pages/UsersPage.tsx";
 import InvitationPage from "./pages/InvitationPage.tsx";
+import TagsPage from "./pages/TagsPage.tsx";
+import VehiclePage from "./pages/VehiclePage.tsx";
 import { User } from './utils/types';
 import { useUserStore } from './store/userStore';
 import { Spin, ConfigProvider } from 'antd';
@@ -32,6 +34,8 @@ const AppContent = () => {
                         <Route element={<RoleBasedRoute user={user} allowedRoles={['admin']} isLoading={isLoading} />}>
                             <Route path='/user' element={<UsersPage />} />
                             <Route path='/invitations' element={<InvitationPage />} />
+                            <Route path='/tags' element={<TagsPage />} />
+                            <Route path='/vehicles' element={<VehiclePage />} />
                         </Route>
                     </Route>
                     <Route path='/login' element={<LoginPage />} />

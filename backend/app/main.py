@@ -146,10 +146,14 @@ class SessionMiddleware(BaseHTTPMiddleware):
         return response
 
 
-origins = [
-    "http://localhost:5173",
-    "http://localhost:8000",
-]
+# Set origins based on environment
+if config.env == "prod":
+    origins = ["https://api.flamora.online/"]
+else:
+    origins = [
+        "http://localhost:5173",
+        "http://localhost:8000",
+    ]
 
 app.add_middleware(
     CORSMiddleware,

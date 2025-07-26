@@ -15,13 +15,15 @@ interface CreateEventIssueModalProps {
   onCancel: () => void;
   onSuccess: () => void;
   defaultType?: 'event' | 'issue';
+  initialLocation?: [number, number];
 }
 
 export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
   visible,
   onCancel,
   onSuccess,
-  defaultType = 'event'
+  defaultType = 'event',
+  initialLocation
 }) => {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<string>(defaultType);
@@ -41,15 +43,34 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
       fetchTags();
       fetchVehicles();
       form.resetFields();
-      setLocation(null);
+      
+      // Setze initial location wenn vorhanden
+      if (initialLocation) {
+        setLocation(initialLocation);
+        form.setFieldsValue({ 
+          location: `${initialLocation[0].toFixed(6)}, ${initialLocation[1].toFixed(6)}` 
+        });
+      } else {
+        setLocation(null);
+      }
+      
       setActiveTab(defaultType); // Setze den aktiven Tab basierend auf defaultType
     }
-  }, [visible, fetchTags, fetchVehicles, form, defaultType]);
+  }, [visible, fetchTags, fetchVehicles, form, defaultType, initialLocation]);
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
     form.resetFields();
-    setLocation(null);
+    
+    // Behalte initial location bei Tab-Wechsel bei
+    if (initialLocation) {
+      setLocation(initialLocation);
+      form.setFieldsValue({ 
+        location: `${initialLocation[0].toFixed(6)}, ${initialLocation[1].toFixed(6)}` 
+      });
+    } else {
+      setLocation(null);
+    }
   };
 
   const getCurrentLocation = () => {
@@ -135,8 +156,7 @@ export const CreateEventIssueModal: React.FC<CreateEventIssueModalProps> = ({
     >
       <Space.Compact style={{ width: '100%' }}>
         <Input 
-          placeholder="Koordinaten eingeben oder aktuelle Position verwenden" 
-          value={location ? `${location[0].toFixed(6)}, ${location[1].toFixed(6)}` : undefined}
+          placeholder="Koordinaten eingeben oder aktuelle Position verwenden"
         />
         <Button 
           onClick={getCurrentLocation} 

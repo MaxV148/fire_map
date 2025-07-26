@@ -19,6 +19,8 @@ class ConfigProvider(BaseSettings):
     api_prefix: str = Field(default="/api/v1", description="API version")
     api_port: int = Field(default=8000, description="API port")
 
+    env: str = Field(default="dev", description="Environment")
+
     session_expire_seconds: int = Field(
         default=3600, description="Session expiration time in seconds"
     )

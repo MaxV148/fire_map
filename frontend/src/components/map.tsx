@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import { Card, Button, Typography, Space, Tag } from 'antd';
 
 import 'leaflet/dist/leaflet.css';
@@ -42,6 +42,21 @@ const issueIcon = L.icon({
 
 const { Text } = Typography;
 
+// Neue Komponente für Map-Click-Events
+interface MapClickHandlerProps {
+  onMapClick: (lat: number, lng: number) => void;
+}
+
+const MapClickHandler: React.FC<MapClickHandlerProps> = ({ onMapClick }) => {
+  useMapEvents({
+    click: (e) => {
+      const { lat, lng } = e.latlng;
+      onMapClick(lat, lng);
+    },
+  });
+  return null;
+};
+
 interface MapProps {
   center?: [number, number];
   zoom?: number;
@@ -52,6 +67,7 @@ interface MapProps {
   }>;
   showEvents?: boolean;
   showIssues?: boolean;
+  onMapClick?: (lat: number, lng: number) => void;
 }
 
 export const LocationMap: React.FC<MapProps> = ({
@@ -59,7 +75,8 @@ export const LocationMap: React.FC<MapProps> = ({
   zoom = 13,
   markers = [],
   showEvents = true,
-  showIssues = true
+  showIssues = true,
+  onMapClick
 }) => {
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
@@ -106,6 +123,9 @@ export const LocationMap: React.FC<MapProps> = ({
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          
+          {/* Map Click Handler */}
+          {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
           
           {/* Benutzerdefinierte Marker */}
           {markers.map((marker, index) => (
@@ -169,7 +189,10 @@ export const LocationMap: React.FC<MapProps> = ({
           ))}
         </MapContainer>
       </div>
-      <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text type="secondary" style={{ fontSize: '12px' }}>
+          {onMapClick ? 'Klicken Sie auf die Karte, um ein Event/Issue zu erstellen' : ''}
+        </Text>
         <Button onClick={resetView}>Ansicht zurücksetzen</Button>
       </div>
     </Card>
