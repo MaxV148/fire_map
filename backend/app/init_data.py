@@ -36,8 +36,7 @@ def setup_initial_admin():
         if not admin_role:
             logger.info("Creating admin role")
             admin_role_data = RoleCreate(
-                name="admin",
-                description="Administrator role with full access"
+                name="admin", description="Administrator role with full access"
             )
             admin_role = role_repo.create(admin_role_data)
         # Check if user role exists, create if not
@@ -45,8 +44,7 @@ def setup_initial_admin():
         if not user_role:
             logger.info("Creating user role")
             user_role_data = RoleCreate(
-                name="user",
-                description="Standard user role with limited access"
+                name="user", description="Standard user role with limited access"
             )
             role_repo.create(user_role_data)
 
@@ -59,7 +57,7 @@ def setup_initial_admin():
             first_name="Admin",
             last_name="User",
             password=hashed_password,
-            role_id=admin_role.id
+            role_id=admin_role.id,
         )
 
         user_repo.create_user(admin_user)

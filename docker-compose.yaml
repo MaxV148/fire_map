@@ -15,6 +15,7 @@ services:
     build: ./backend/.
     volumes:
       - ./backend/app:/app/app
+      - ./backend/mail_templates:/app/mail_templates
     ports:
       - "8000:8000"
     environment:

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from domain.role.model import Role
-from domain.user.model import User
+from domain.user.model import User, PasswordReset
 
 
 class UserRepository:
@@ -39,3 +39,49 @@ class UserRepository:
         self.db.commit()
         self.db.refresh(user)
         return user
+
+    def change_password(self, user_id: int, new_password: str):
+        self.db.query(User).filter(User.id == user_id).update(
+            {"password": new_password}
+        )
+        self.db.commit()
+
+    def create_pw_reset(self, pw_reset: PasswordReset):
+        self.db.add(pw_reset)
+        self.db.commit()
+        self.db.refresh(pw_reset)
+        return pw_reset
+
+    def get_pw_reset_by_token(self, reset_token: str):
+        return (
+            self.db.query(PasswordReset)
+            .filter(PasswordReset.reset_token == reset_token)
+            .one_or_none()
+        )
+
+    def set_pw_reset_token_used(self, reset_token: str):
+        self.db.query(PasswordReset).filter(
+            PasswordReset.reset_token == reset_token
+        ).update(
+            {
+                "is_used": True,
+            }
+        )
+        self.db.commit()
+
+    def get_pw_reset_by_code(self, code: str):
+        return (
+            self.db.query(PasswordReset)
+            .filter(PasswordReset.reset_code == code)
+            .one_or_none()
+        )
+
+    def set_pw_reset_code_used(self, reset_code: str):
+        self.db.query(PasswordReset).filter(
+            PasswordReset.reset_code == reset_code
+        ).update(
+            {
+                "is_used": True,
+            }
+        )
+        self.db.commit()

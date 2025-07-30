@@ -7,8 +7,8 @@ from unittest.mock import patch
 from backend.app.misc.sign import (
     sign_invitation_id,
     verify_invitation_signature,
-    create_signed_invitation_token,
-    verify_signed_invitation_token,
+    create_signed_token,
+    verify_signed_signed_token,
 )
 
 
@@ -313,7 +313,7 @@ class TestSignedInvitationToken:
         invite_uuid = "123e4567-e89b-12d3-a456-426614174000"
         secret = "test_secret_key"
 
-        token = create_signed_invitation_token(invite_uuid, secret)
+        token = create_signed_token(invite_uuid, secret)
 
         # Token sollte aus UUID und Signatur bestehen, getrennt durch '.'
         assert "." in token
@@ -326,8 +326,8 @@ class TestSignedInvitationToken:
         invite_uuid = "123e4567-e89b-12d3-a456-426614174000"
         secret = "test_secret_key"
 
-        token1 = create_signed_invitation_token(invite_uuid, secret)
-        token2 = create_signed_invitation_token(invite_uuid, secret)
+        token1 = create_signed_token(invite_uuid, secret)
+        token2 = create_signed_token(invite_uuid, secret)
 
         assert token1 == token2
 
@@ -336,8 +336,8 @@ class TestSignedInvitationToken:
         invite_uuid = "123e4567-e89b-12d3-a456-426614174000"
         secret = "test_secret_key"
 
-        token = create_signed_invitation_token(invite_uuid, secret)
-        is_valid, returned_uuid = verify_signed_invitation_token(token, secret)
+        token = create_signed_token(invite_uuid, secret)
+        is_valid, returned_uuid = verify_signed_signed_token(token, secret)
 
         assert is_valid is True
         assert returned_uuid == invite_uuid
@@ -347,13 +347,11 @@ class TestSignedInvitationToken:
         invite_uuid = "123e4567-e89b-12d3-a456-426614174000"
         secret = "test_secret_key"
 
-        token = create_signed_invitation_token(invite_uuid, secret)
+        token = create_signed_token(invite_uuid, secret)
         # Manipuliere die Signatur
         manipulated_token = token[:-5] + "XXXXX"
 
-        is_valid, returned_uuid = verify_signed_invitation_token(
-            manipulated_token, secret
-        )
+        is_valid, returned_uuid = verify_signed_signed_token(manipulated_token, secret)
 
         assert is_valid is False
         assert returned_uuid is None
@@ -364,8 +362,8 @@ class TestSignedInvitationToken:
         correct_secret = "correct_secret"
         wrong_secret = "wrong_secret"
 
-        token = create_signed_invitation_token(invite_uuid, correct_secret)
-        is_valid, returned_uuid = verify_signed_invitation_token(token, wrong_secret)
+        token = create_signed_token(invite_uuid, correct_secret)
+        is_valid, returned_uuid = verify_signed_signed_token(token, wrong_secret)
 
         assert is_valid is False
         assert returned_uuid is None
@@ -375,17 +373,17 @@ class TestSignedInvitationToken:
         secret = "test_secret_key"
 
         # Token ohne Punkt
-        is_valid, returned_uuid = verify_signed_invitation_token("no_dot_token", secret)
+        is_valid, returned_uuid = verify_signed_signed_token("no_dot_token", secret)
         assert is_valid is False
         assert returned_uuid is None
 
         # Leerer Token
-        is_valid, returned_uuid = verify_signed_invitation_token("", secret)
+        is_valid, returned_uuid = verify_signed_signed_token("", secret)
         assert is_valid is False
         assert returned_uuid is None
 
         # Token nur mit Punkt
-        is_valid, returned_uuid = verify_signed_invitation_token(".", secret)
+        is_valid, returned_uuid = verify_signed_signed_token(".", secret)
         assert is_valid is False
         assert returned_uuid is None
 
@@ -394,8 +392,8 @@ class TestSignedInvitationToken:
         invite_uuid = "uuid.with.dots"
         secret = "test_secret_key"
 
-        token = create_signed_invitation_token(invite_uuid, secret)
-        is_valid, returned_uuid = verify_signed_invitation_token(token, secret)
+        token = create_signed_token(invite_uuid, secret)
+        is_valid, returned_uuid = verify_signed_signed_token(token, secret)
 
         # Sollte funktionieren, da rsplit mit maxsplit=1 verwendet wird
         assert is_valid is True
@@ -411,8 +409,8 @@ class TestSignedInvitationToken:
         ]
 
         for invite_uuid, secret in test_cases:
-            token = create_signed_invitation_token(invite_uuid, secret)
-            is_valid, returned_uuid = verify_signed_invitation_token(token, secret)
+            token = create_signed_token(invite_uuid, secret)
+            is_valid, returned_uuid = verify_signed_signed_token(token, secret)
 
             assert is_valid is True
             assert returned_uuid == invite_uuid
@@ -423,16 +421,16 @@ class TestSignedInvitationToken:
         secret1 = "secret1"
         secret2 = "secret2"
 
-        token1 = create_signed_invitation_token(invite_uuid, secret1)
-        token2 = create_signed_invitation_token(invite_uuid, secret2)
+        token1 = create_signed_token(invite_uuid, secret1)
+        token2 = create_signed_token(invite_uuid, secret2)
 
         # Token sollten unterschiedlich sein
         assert token1 != token2
 
         # Token1 sollte nicht mit secret2 verifizierbar sein
-        is_valid, _ = verify_signed_invitation_token(token1, secret2)
+        is_valid, _ = verify_signed_signed_token(token1, secret2)
         assert is_valid is False
 
         # Token2 sollte nicht mit secret1 verifizierbar sein
-        is_valid, _ = verify_signed_invitation_token(token2, secret1)
+        is_valid, _ = verify_signed_signed_token(token2, secret1)
         assert is_valid is False

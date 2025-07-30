@@ -79,9 +79,31 @@ class OtpVerify(BaseModel):
     code: str
 
 
+class ResetPassword(BaseModel):
+    user_id: int
+
+
+class SetNewPassword(BaseModel):
+    new_password: str
+
+
+class SelfResetPassword(BaseModel):
+    old_password: str
+    new_password: str
+
+
 class OtpDisable(BaseModel):
     code: str
     confirm: bool = False
+
+
+class ForgotPassword(BaseModel):
+    email: str
+
+
+class ConfirmForgotPassword(BaseModel):
+    code: str
+    new_password: str
 
 
 class JWTPayload(BaseModel):

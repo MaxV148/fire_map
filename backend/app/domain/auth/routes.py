@@ -7,7 +7,7 @@ import pyotp
 import qrcode
 from sqlalchemy.orm.session import Session
 from fastapi.responses import JSONResponse
-from misc.sign import verify_signed_invitation_token
+from misc.sign import verify_signed_signed_token
 from domain.user.repository import UserRepository
 from domain.user.otp_repo import OTPRepo
 from infrastructure.redis.redis_client import session_manager
@@ -38,9 +38,7 @@ def register_user(
     invite_repo: InviteRepository = Depends(get_invite_repo),
 ):
     # Validiere Invitation Token
-    is_valid, invite_uuid = verify_signed_invitation_token(
-        invite, config.invite_hmac_secret
-    )
+    is_valid, invite_uuid = verify_signed_signed_token(invite, config.hmac_secret)
     if not is_valid or not invite_uuid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -155,6 +153,7 @@ def logout_user(request: Request, response: Response):
     # Clear the session cookie
     response.delete_cookie(key="sid")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 @auth_router.get("/status")
 def get_status(request: Request, response: JSONResponse):

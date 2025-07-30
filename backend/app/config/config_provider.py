@@ -36,19 +36,23 @@ class ConfigProvider(BaseSettings):
     )
 
     # HMAC Security
-    invite_hmac_secret: str = Field(
+    hmac_secret: str = Field(
         default="your-secret-key-change-in-production",
         description="Secret key for HMAC signing of invite tokens",
     )
+    secret_length: int = Field(default=32)
 
     # Initial Admin Setup
     initial_admin_email: str = Field(
-        default="admin@fire-map.com",
-        description="Email for the initial admin user"
+        default="admin@fire-map.com", description="Email for the initial admin user"
     )
     initial_admin_password: str = Field(
-        default="admin123",
-        description="Password for the initial admin user"
+        default="admin123", description="Password for the initial admin user"
+    )
+
+    # Frontend URLs
+    frontend_url: str = Field(
+        default="http://localhost:3000", description="Frontend base URL"
     )
 
     class Config:

@@ -9,6 +9,8 @@ interface AdminUserStore {
     fetchUsers: () => Promise<void>;
     deleteUser: (userId: number) => Promise<boolean>;
     updateUserRole: (userId: number, role_id: number) => Promise<boolean>;
+    deactivateUser: (userId: number, deactivate: boolean) => Promise<boolean>;
+    resetUserPassword: (userId: number) => Promise<boolean>;
 }
 
 export const useAdminUserStore = create<AdminUserStore>((set, get) => ({
@@ -69,6 +71,48 @@ export const useAdminUserStore = create<AdminUserStore>((set, get) => ({
         } catch (error: any) {
             set({
                 error: error.response?.data?.message || error.message || 'Unbekannter Fehler',
+                isLoading: false,
+            });
+            return false;
+        }
+    },
+
+    deactivateUser: async (userId: number, deactivate: boolean) => {
+        set({ isLoading: true, error: null });
+
+        try {
+            const response = await apiClient.patch(`/v1/user/deactivate/${userId}`, { deactivate });
+            
+            // Aktualisiere den Benutzer in der Liste
+            const updatedUser: User = response.data;
+            set(state => ({
+                users: state.users.map(user => 
+                    user.id === userId ? updatedUser : user
+                ),
+                isLoading: false
+            }));
+            
+            return true;
+        } catch (error: any) {
+            set({
+                error: error.response?.data?.message || error.message || 'Fehler beim Deaktivieren des Benutzers',
+                isLoading: false,
+            });
+            return false;
+        }
+    },
+
+    resetUserPassword: async (userId: number) => {
+        set({ isLoading: true, error: null });
+
+        try {
+            await apiClient.post(`/v1/user/reset_password/${userId}`);
+            
+            set({ isLoading: false });
+            return true;
+        } catch (error: any) {
+            set({
+                error: error.response?.data?.message || error.message || 'Fehler beim Zurücksetzen des Passworts',
                 isLoading: false,
             });
             return false;

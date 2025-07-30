@@ -1,6 +1,7 @@
 import hmac
 import hashlib
 import base64
+import secrets
 
 
 def sign_invitation_id(invite_uuid: str, secret: str) -> str:
@@ -15,7 +16,7 @@ def verify_invitation_signature(invitation_id: str, sig: str, secret: str) -> bo
     return hmac.compare_digest(expected_sig, sig)
 
 
-def create_signed_invitation_token(invite_uuid: str, secret: str) -> str:
+def create_signed_token(invite_uuid: str, secret: str) -> str:
     """
     Erstellt einen kombinierten Token aus invite_uuid und HMAC-Signatur.
     Format: {invite_uuid}.{signature}
@@ -24,7 +25,7 @@ def create_signed_invitation_token(invite_uuid: str, secret: str) -> str:
     return f"{invite_uuid}.{signature}"
 
 
-def verify_signed_invitation_token(token: str, secret: str) -> tuple[bool, str | None]:
+def verify_signed_signed_token(token: str, secret: str) -> tuple[bool, str | None]:
     """
     Verifiziert einen kombinierten Invitation Token.
 
@@ -47,3 +48,7 @@ def verify_signed_invitation_token(token: str, secret: str) -> tuple[bool, str |
 
     except (ValueError, IndexError):
         return False, None
+
+
+def generate_forgot_password_code(length: int = 6) -> str:
+    return "".join(secrets.choice("0123456789") for _ in range(length))

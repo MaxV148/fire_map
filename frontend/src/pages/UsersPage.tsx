@@ -1,26 +1,17 @@
 import React, { useEffect } from 'react';
 import NavBase from "../components/NavBase.tsx";
 import { useAdminUserStore } from '../store/adminUserStore.ts';
-import { Table, Button, Space, Popconfirm, Select, message } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Select, message, Tag } from 'antd';
+import { CheckOutlined, StopOutlined, KeyOutlined } from '@ant-design/icons';
 import { User, UserRole } from '../utils/types';
 
 const UsersPage: React.FC = () => {
-    const { users, isLoading, error, fetchUsers, deleteUser, updateUserRole } = useAdminUserStore();
+    const { users, isLoading, error, fetchUsers, deactivateUser, updateUserRole, resetUserPassword } = useAdminUserStore();
 
 
     useEffect(() => {
         fetchUsers();
     }, [fetchUsers]);
-
-    const handleDeleteUser = async (userId: number) => {
-        const success = await deleteUser(userId);
-        if (success) {
-            message.success('Benutzer erfolgreich gelöscht');
-        } else {
-            message.error('Fehler beim Löschen des Benutzers');
-        }
-    };
 
     const handleRoleChange = async (userId: number, role_id: number) => {
         const success = await updateUserRole(userId, role_id);
@@ -28,6 +19,25 @@ const UsersPage: React.FC = () => {
             message.success('Benutzerrolle erfolgreich aktualisiert');
         } else {
             message.error('Fehler beim Aktualisieren der Benutzerrolle');
+        }
+    };
+
+    const handleToggleUserStatus = async (userId: number, currentStatus: boolean) => {
+        const newStatus = !currentStatus;
+        const success = await deactivateUser(userId, newStatus);
+        if (success) {
+            message.success(newStatus ? 'Benutzer erfolgreich deaktiviert' : 'Benutzer erfolgreich aktiviert');
+        } else {
+            message.error('Fehler beim Ändern des Benutzerstatus');
+        }
+    };
+
+    const handlePasswordReset = async (userId: number) => {
+        const success = await resetUserPassword(userId);
+        if (success) {
+            message.success('Password-Reset-E-Mail wurde erfolgreich versendet');
+        } else {
+            message.error('Fehler beim Versenden der Password-Reset-E-Mail');
         }
     };
 
@@ -53,6 +63,16 @@ const UsersPage: React.FC = () => {
             key: 'last_name',
         },
         {
+            title: 'Status',
+            dataIndex: 'deactivated',
+            key: 'status',
+            render: (deactivated: boolean) => (
+                <Tag color={deactivated ? 'red' : 'green'}>
+                    {deactivated ? 'Deaktiviert' : 'Aktiv'}
+                </Tag>
+            ),
+        },
+        {
             title: 'Rolle',
             dataIndex: 'role',
             key: 'role',
@@ -61,6 +81,7 @@ const UsersPage: React.FC = () => {
                     defaultValue={role}
                     style={{ width: 120 }}
                     onChange={(value) => handleRoleChange(record.id, parseInt(value))}
+                    disabled={record.deactivated}
                 >
                     <Select.Option value={UserRole.USER}>Benutzer</Select.Option>
                     <Select.Option value={UserRole.ADMIN}>Admin</Select.Option>
@@ -72,15 +93,22 @@ const UsersPage: React.FC = () => {
             key: 'actions',
             render: (_: any, record: User) => (
                 <Space size="middle">
-                    <Popconfirm
-                        title="Benutzer löschen"
-                        description="Sind Sie sicher, dass Sie diesen Benutzer löschen möchten?"
-                        onConfirm={() => handleDeleteUser(record.id)}
-                        okText="Ja"
-                        cancelText="Nein"
+                    <Button
+                        type={record.deactivated ? "primary" : "default"}
+                        danger={!record.deactivated}
+                        icon={record.deactivated ? <CheckOutlined /> : <StopOutlined />}
+                        onClick={() => handleToggleUserStatus(record.id, record.deactivated)}
                     >
-                        <Button danger icon={<DeleteOutlined />} />
-                    </Popconfirm>
+                        {record.deactivated ? 'Aktivieren' : 'Deaktivieren'}
+                    </Button>
+                    <Button
+                        type="default"
+                        icon={<KeyOutlined />}
+                        onClick={() => handlePasswordReset(record.id)}
+                        disabled={record.deactivated}
+                    >
+                        Passwort zurücksetzen
+                    </Button>
                 </Space>
             ),
         },

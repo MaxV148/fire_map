@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Einladung zum Beitritt</title>
+    <title>Passwort zurücksetzen</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -46,7 +46,7 @@
             font-size: 16px;
         }
 
-        .invite-button {
+        .reset-button {
             text-align: center;
             margin: 30px 0;
         }
@@ -85,6 +85,16 @@
             margin: 20px 0;
             font-size: 14px;
         }
+
+        .security-notice {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -93,32 +103,35 @@
         <div class="logo">🔥 Fire Map</div>
     </div>
 
-    <h1>Du bist eingeladen!</h1>
+    <h1>Passwort zurücksetzen</h1>
 
     <div class="content">
         <p>Hallo!</p>
 
-        <p>Du wurdest eingeladen, der <strong>Fire Map</strong> Plattform beizutreten. Mit Fire Map kannst du wichtige
-            Brandinformationen verfolgen und mit anderen Nutzern zusammenarbeiten.</p>
+        <p>Du hast eine Anfrage zum Zurücksetzen deines Passworts für dein <strong>Fire Map</strong> Konto gestellt.</p>
 
-        <p>Um deine Einladung anzunehmen und dein Konto zu erstellen, klicke einfach auf den Button unten:</p>
+        <p>Um ein neues Passwort zu erstellen, klicke einfach auf den Button unten:</p>
     </div>
 
-    <div class="invite-button">
-        <a href="{invite_link}" class="btn">Einladung annehmen</a>
+    <div class="reset-button">
+        <a href="{{ reset_link }}" class="btn">Passwort zurücksetzen</a>
     </div>
 
     <div class="warning">
-        <strong>Wichtiger Hinweis:</strong> Diese Einladung ist nur für eine begrenzte Zeit gültig. Falls der Button
-        nicht funktioniert, kopiere den folgenden Link in deinen Browser:<br>
+        <strong>Wichtiger Hinweis:</strong> Dieser Link ist nur für eine begrenzte Zeit gültig (24 Stunden). Falls der Button nicht funktioniert, kopiere den folgenden Link in deinen Browser:<br>
         <br>
-        <code>{invite_link}</code>
+        
+        <code>{{ reset_link }}</code>
+    </div>
+
+    <div class="security-notice">
+        <strong>Sicherheitshinweis:</strong> Falls du diese Anfrage nicht gestellt hast, ignoriere diese E-Mail. Dein Passwort bleibt unverändert und dein Konto ist sicher.
     </div>
 
     <div class="content">
-        <p>Falls du diese Einladung nicht erwartet hast, kannst du diese E-Mail einfach ignorieren.</p>
+        <p>Nach dem Klicken auf den Link wirst du zu einer sicheren Seite weitergeleitet, auf der du ein neues Passwort erstellen kannst.</p>
 
-        <p>Wir freuen uns darauf, dich in unserem Team begrüßen zu dürfen!</p>
+        <p>Falls du Probleme hast oder Fragen zum Zurücksetzen deines Passworts hast, kontaktiere unser Support-Team.</p>
 
         <p>Beste Grüße,<br>
             Das Fire Map Team</p>

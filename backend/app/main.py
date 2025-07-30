@@ -90,14 +90,27 @@ config = get_config()
 
 app = FastAPI()
 
-PUBLIC_ROUTES = ["/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/status"]
+PUBLIC_ROUTES = [
+    "/api/v1/auth/login",
+    "/api/v1/auth/register",
+    "/api/v1/auth/status",
+    "/api/v1/user/forgot_password",
+    "/api/v1/user/confirm_forgot_password",
+]
 PUBLIC_ROUTES_DEV = ["/docs", "/openapi.json"]
 
 ##Initial setup
 
 
 class SessionMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: ASGIApp, session_manager, config, public_routes: list, public_routes_dev: list):
+    def __init__(
+        self,
+        app: ASGIApp,
+        session_manager,
+        config,
+        public_routes: list,
+        public_routes_dev: list,
+    ):
         super().__init__(app)
         self.session_manager = session_manager
         self.config = config
@@ -140,7 +153,6 @@ class SessionMiddleware(BaseHTTPMiddleware):
 
     def _unauthorized(self, detail: str):
         response = JSONResponse(status_code=401, content={"detail": detail})
-        # Manuell CORS setzen, falls nötig
         response.headers["Access-Control-Allow-Origin"] = "http://localhost:5173"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
@@ -162,8 +174,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(SessionMiddleware, session_manager=session_manager, config=config,
-                   public_routes=PUBLIC_ROUTES, public_routes_dev=PUBLIC_ROUTES_DEV)
+app.add_middleware(
+    SessionMiddleware,
+    session_manager=session_manager,
+    config=config,
+    public_routes=PUBLIC_ROUTES,
+    public_routes_dev=PUBLIC_ROUTES_DEV,
+)
 
 
 # @app.middleware("http")

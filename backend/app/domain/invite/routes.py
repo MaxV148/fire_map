@@ -13,36 +13,14 @@ from domain.invite.dto import (
 from domain.invite.repository import InviteRepository
 from domain.user.repository import UserRepository
 from infrastructure.postgresql.db import get_db
-from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
+from fastapi_mail import FastMail, MessageSchema
+from infrastructure.mail.client import get_mail_client
 from dependencies.repository_dependencies import get_user_repository, get_invite_repo
 from config.config_provider import get_config
-from misc.sign import create_signed_invitation_token
-
-
-mail_config = ConnectionConfig(
-    MAIL_USERNAME="user",
-    MAIL_PASSWORD="test",
-    MAIL_FROM="mail@mail.com",
-    MAIL_PORT=1025,
-    MAIL_SERVER="mailserver",
-    MAIL_FROM_NAME="Fire Map",
-    MAIL_STARTTLS=False,
-    MAIL_SSL_TLS=False,
-    USE_CREDENTIALS=False,
-    VALIDATE_CERTS=False,
-)
-
-fm = FastMail(mail_config)
+from misc.sign import create_signed_token
 
 
 invite_router = APIRouter(prefix="/invite")
-
-
-def get_mail_client() -> FastMail:
-    """
-    Dependency to inject FastMail client
-    """
-    return fm
 
 
 @invite_router.post(
@@ -71,15 +49,13 @@ async def create_invite(
 
     # Generate HMAC-secured invite token
     config = get_config()
-    invite_token = create_signed_invitation_token(
-        str(invite.invite_uuid), config.invite_hmac_secret
-    )
+    invite_token = create_signed_token(str(invite.invite_uuid), config.hmac_secret)
 
     # Generate invite link with secured token
     base_url = str(request.base_url).rstrip("/")
     invite_link = f"{base_url}/register?invitation={invite_token}"
 
-    with open("./mail_templates/invite.html", "r") as f:
+    with open("./mail_templates/invite.html.jinja", "r") as f:
         content = f.read()
         content = content.replace("{invite_link}", invite_link)
 

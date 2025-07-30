@@ -47,6 +47,7 @@ export interface User {
     created_at: string; // ISO format
     otp_configured: boolean;
     role: string;
+    deactivated: boolean;
 }
 
 
