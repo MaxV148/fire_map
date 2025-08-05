@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update, delete, and_
-from typing import List, Optional
+from sqlalchemy import select, update, delete, and_, func
+from typing import List, Optional, Tuple
 from geoalchemy2.functions import ST_GeomFromText
 from geoalchemy2.shape import to_shape
 import json
@@ -51,7 +51,8 @@ class IssueRepository:
         result = self.db.execute(query).scalar_one_or_none()
         return result
 
-    def get_filtered_issues(self, filter: IssueFilter):
+    def get_filtered_issues(self, filter: IssueFilter) -> Tuple[List[Issue], int]:
+        """Get filtered issues with pagination and total count"""
         query = select(Issue)
         if filter.tag_ids:
             query = query.join(Issue.tags).where(Tag.id.in_(filter.tag_ids))
@@ -73,8 +74,28 @@ class IssueRepository:
         if conditions:
             query = query.where(and_(*conditions))
 
-        result = self.db.execute(query).scalars().all()
-        return result
+        # Paginierung anwenden
+        offset = (filter.page - 1) * filter.limit
+        paginated_query = query.offset(offset).limit(filter.limit)
+        
+        # Issues abrufen
+        issues = self.db.execute(paginated_query).scalars().all()
+        
+        # Gesamtanzahl der Issues ermitteln (ohne Paginierung)
+        # Bei Joins müssen wir distinct verwenden, um doppelte Zählungen zu vermeiden
+        if filter.tag_ids:
+            count_query = select(func.count(Issue.id.distinct()))
+            count_query = count_query.join(Issue.tags).where(Tag.id.in_(filter.tag_ids))
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+        else:
+            count_query = select(func.count(Issue.id))
+            if conditions:
+                count_query = count_query.where(and_(*conditions))
+        
+        total_count = self.db.execute(count_query).scalar()
+        
+        return issues, total_count
 
     def get_by_user(self, user_id: int) -> List[Issue]:
         """Get all issues created by a specific user"""

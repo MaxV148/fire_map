@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, List, Tabs, Tag, Typography, Space, Badge, Empty, Form, Button, message } from 'antd';
+import { Card, List, Tabs, Tag, Typography, Space, Badge, Empty, Form, Button, message, Pagination } from 'antd';
 import * as Icons from '@ant-design/icons';
 import { FilterValues } from './FilterPanel';
 import EditEventIssueModal from './modals/EditEventIssueModal';
@@ -25,8 +25,24 @@ export const EventsIssuesList: React.FC<EventsIssuesListProps> = ({ filters }) =
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
   const [form] = Form.useForm();
   const { isAuthenticated } = useUserStore();
-  const { events, fetchEvents, isLoading: eventsLoading, updateEvent } = useEventStore();
-  const { issues, fetchIssues, isLoading: issuesLoading, updateIssue } = useIssueStore();
+  const { 
+    events, 
+    pagination, 
+    fetchEvents, 
+    isLoading: eventsLoading, 
+    updateEvent,
+    goToPage,
+    setPageSize
+  } = useEventStore();
+  const { 
+    issues, 
+    pagination: issuePagination, 
+    fetchIssues, 
+    isLoading: issuesLoading, 
+    updateIssue,
+    goToPage: goToIssuePage,
+    setPageSize: setIssuePageSize
+  } = useIssueStore();
   const { mode } = useTheme();
 
   useEffect(() => {
@@ -86,6 +102,32 @@ export const EventsIssuesList: React.FC<EventsIssuesListProps> = ({ filters }) =
     // Aktualisiere die Listen nach erfolgreicher Erstellung
     fetchEvents();
     fetchIssues();
+  };
+
+  const handlePageChange = async (page: number, pageSize?: number) => {
+    try {
+      if (pageSize && pageSize !== pagination.limit) {
+        await setPageSize(pageSize);
+      } else {
+        await goToPage(page);
+      }
+    } catch (error) {
+      console.error('Fehler beim Wechseln der Seite:', error);
+      message.error('Fehler beim Laden der Events');
+    }
+  };
+
+  const handleIssuePageChange = async (page: number, pageSize?: number) => {
+    try {
+      if (pageSize && pageSize !== issuePagination.limit) {
+        await setIssuePageSize(pageSize);
+      } else {
+        await goToIssuePage(page);
+      }
+    } catch (error) {
+      console.error('Fehler beim Wechseln der Seite:', error);
+      message.error('Fehler beim Laden der Issues');
+    }
   };
 
   const handleModalSave = async (values: any) => {
@@ -168,7 +210,7 @@ export const EventsIssuesList: React.FC<EventsIssuesListProps> = ({ filters }) =
             tab={
               <span>
                 <Icons.CalendarOutlined />
-                <Badge count={events.length} size="small" offset={[10, -5]}>
+                <Badge count={pagination.total_count} size="small" offset={[10, -5]}>
                   <span style={{ padding: '0 5px' }}>Events</span>
                 </Badge>
               </span>
@@ -214,13 +256,31 @@ export const EventsIssuesList: React.FC<EventsIssuesListProps> = ({ filters }) =
                 </List.Item>
               )}
             />
+            {pagination.total_count > 0 && (
+              <div style={{ marginTop: 16, textAlign: 'center' }}>
+                <Pagination
+                  current={pagination.page}
+                  total={pagination.total_count}
+                  pageSize={pagination.limit}
+                  showSizeChanger
+                  showQuickJumper
+                  showTotal={(total, range) => 
+                    `${range[0]}-${range[1]} von ${total} Events`
+                  }
+                  pageSizeOptions={['5', '10', '20', '50', '100']}
+                  onChange={handlePageChange}
+                  disabled={eventsLoading}
+                  size="small"
+                />
+              </div>
+            )}
           </TabPane>
           
           <TabPane 
             tab={
               <span>
                 <Icons.ExclamationCircleOutlined />
-                <Badge count={issues.length} size="small" offset={[10, -5]}>
+                <Badge count={issuePagination.total_count} size="small" offset={[10, -5]}>
                   <span style={{ padding: '0 5px' }}>Issues</span>
                 </Badge>
               </span>
@@ -266,6 +326,24 @@ export const EventsIssuesList: React.FC<EventsIssuesListProps> = ({ filters }) =
                 </List.Item>
               )}
             />
+            {issuePagination.total_count > 0 && (
+              <div style={{ marginTop: 16, textAlign: 'center' }}>
+                <Pagination
+                  current={issuePagination.page}
+                  total={issuePagination.total_count}
+                  pageSize={issuePagination.limit}
+                  showSizeChanger
+                  showQuickJumper
+                  showTotal={(total, range) => 
+                    `${range[0]}-${range[1]} von ${total} Issues`
+                  }
+                  pageSizeOptions={['5', '10', '20', '50', '100']}
+                  onChange={handleIssuePageChange}
+                  disabled={issuesLoading}
+                  size="small"
+                />
+              </div>
+            )}
           </TabPane>
         </Tabs>
       </Card>

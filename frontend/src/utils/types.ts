@@ -15,7 +15,7 @@ export interface Event {
     location: number[];
     tags: Tag[];
     vehicles: VehicleType[];
-    created_by_user_id: number;
+    created_by: number;
     created_at: string;
 }
 
@@ -50,6 +50,27 @@ export interface User {
     deactivated: boolean;
 }
 
+
+export interface PaginatedEventResponse {
+    events: Event[];
+    total_count: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+}
+
+export interface PaginatedIssueResponse {
+    issues: Issue[];
+    total_count: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+}
+
+export interface PaginationParams {
+    page: number;
+    limit: number;
+}
 
 export enum UserRole {
     USER = 2,

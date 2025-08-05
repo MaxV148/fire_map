@@ -1,4 +1,4 @@
-import { Event, EventUpdateInput } from '../utils/types';
+import { Event, EventUpdateInput, PaginatedEventResponse, PaginationParams } from '../utils/types';
 import { create } from 'zustand';
 import { apiClient } from '../utils/api';
 import { useFilterStore } from './filterStore';
@@ -14,49 +14,92 @@ interface EventCreateInput {
 
 interface EventStore {
     events: Event[];
+    pagination: {
+        total_count: number;
+        page: number;
+        limit: number;
+        total_pages: number;
+    };
     isLoading: boolean;
     error: string | null;
-    fetchEvents: () => Promise<void>;
+    fetchEvents: (params?: Partial<PaginationParams>) => Promise<void>;
     createEvent: (eventData: EventCreateInput) => Promise<Event>;
     updateEvent: (eventId: number, eventData: EventUpdateInput) => Promise<Event>;
     deleteEvent: (eventId: number) => Promise<void>;
     setEvents: (events: Event[]) => void;
     clearEvents: () => void;
+    goToPage: (page: number) => Promise<void>;
+    nextPage: () => Promise<void>;
+    previousPage: () => Promise<void>;
+    setPageSize: (limit: number) => Promise<void>;
 }
 
-export const useEventStore = create<EventStore>((set) => ({
+export const useEventStore = create<EventStore>((set, get) => ({
     events: [],
+    pagination: {
+        total_count: 0,
+        page: 1,
+        limit: 10,
+        total_pages: 0,
+    },
     isLoading: false,
     error: null,
 
-    fetchEvents: async () => {
+    fetchEvents: async (params) => {
         set({ isLoading: true, error: null });
         try {
+            const currentState = get();
             const filters = useFilterStore.getState().filters;
             
-            // Build query parameters
-            const params = new URLSearchParams();
+            // Merge current pagination with new params
+            const paginationParams = {
+                page: params?.page ?? currentState.pagination.page,
+                limit: params?.limit ?? currentState.pagination.limit,
+            };
             
+            // Build query parameters
+            const queryParams = new URLSearchParams();
+            
+            // Add pagination parameters
+            queryParams.append('page', paginationParams.page.toString());
+            queryParams.append('limit', paginationParams.limit.toString());
+            
+            // Add filter parameters
             if (filters.vehicles && filters.vehicles.length > 0) {
-                params.append('vehicle_ids', filters.vehicles.join(','));
+                queryParams.append('vehicle_ids', filters.vehicles.join(','));
             }
             
             if (filters.tags && filters.tags.length > 0) {
-                params.append('tag_ids', filters.tags.join(','));
+                queryParams.append('tag_ids', filters.tags.join(','));
             }
             
             if (filters.dateRange && filters.dateRange.length === 2) {
-                params.append('start_date', filters.dateRange[0].format('YYYY-MM-DD'));
-                params.append('end_date', filters.dateRange[1].format('YYYY-MM-DD'));
+                queryParams.append('start_date', filters.dateRange[0].format('YYYY-MM-DD'));
+                queryParams.append('end_date', filters.dateRange[1].format('YYYY-MM-DD'));
+            }
+            
+            
+            // Standort-Filter hinzufügen
+            if (filters.city && filters.distance !== undefined) {
+                queryParams.append('city_name', filters.city);
+                queryParams.append('distance_km', filters.distance.toString());
             }
 
-            const queryString = params.toString();
-            const url = `/v1/event${queryString ? `?${queryString}` : ''}`;
+            const url = `/v1/event?${queryParams.toString()}`;
 
             const response = await apiClient.get(url);
-            const events: Event[] = response.data;
+            const paginatedResponse: PaginatedEventResponse = response.data;
             
-            set({ events, isLoading: false });
+            set({ 
+                events: paginatedResponse.events, 
+                pagination: {
+                    total_count: paginatedResponse.total_count,
+                    page: paginatedResponse.page,
+                    limit: paginatedResponse.limit,
+                    total_pages: paginatedResponse.total_pages,
+                },
+                isLoading: false 
+            });
         } catch (error: any) {
             set({ error: error.response?.data?.message || error.message || 'Fehler beim Laden der Events', isLoading: false });
         }
@@ -68,10 +111,9 @@ export const useEventStore = create<EventStore>((set) => ({
             const response = await apiClient.post('/v1/event', eventData);
             const newEvent: Event = response.data;
             
-            set(state => ({
-                events: [...state.events, newEvent],
-                isLoading: false
-            }));
+            // Nach dem Erstellen die erste Seite neu laden, um korrekte Paginierung zu haben
+            const { fetchEvents } = get();
+            await fetchEvents({ page: 1 });
 
             return newEvent;
         } catch (error: any) {
@@ -105,10 +147,9 @@ export const useEventStore = create<EventStore>((set) => ({
         try {
             await apiClient.delete(`/v1/event/${eventId}`);
 
-            set(state => ({
-                events: state.events.filter(event => event.id !== eventId),
-                isLoading: false
-            }));
+            // Nach dem Löschen die aktuelle Seite neu laden
+            const { fetchEvents } = get();
+            await fetchEvents();
         } catch (error: any) {
             set({ error: error.response?.data?.message || error.message || 'Fehler beim Löschen des Events', isLoading: false });
             throw error;
@@ -116,5 +157,29 @@ export const useEventStore = create<EventStore>((set) => ({
     },
 
     setEvents: (events) => set({ events }),
-    clearEvents: () => set({ events: [] }),
+    clearEvents: () => set({ events: [], pagination: { total_count: 0, page: 1, limit: 10, total_pages: 0 } }),
+
+    goToPage: async (page) => {
+        const { fetchEvents } = get();
+        await fetchEvents({ page });
+    },
+
+    nextPage: async () => {
+        const { pagination, fetchEvents } = get();
+        if (pagination.page < pagination.total_pages) {
+            await fetchEvents({ page: pagination.page + 1 });
+        }
+    },
+
+    previousPage: async () => {
+        const { pagination, fetchEvents } = get();
+        if (pagination.page > 1) {
+            await fetchEvents({ page: pagination.page - 1 });
+        }
+    },
+
+    setPageSize: async (limit) => {
+        const { fetchEvents } = get();
+        await fetchEvents({ page: 1, limit });
+    },
 }));

@@ -13,12 +13,17 @@ interface FilterStore {
   setDateRange: (dateRange: [dayjs.Dayjs, dayjs.Dayjs] | null) => void;
   setTags: (tags: number[]) => void;
   setVehicles: (vehicles: number[]) => void;
+  setLocation: (city: string | undefined, distance: number | undefined) => void;
 }
 
 const initialState: FilterValues = {
   dateRange: null,
   tags: [],
-  vehicles: []
+  vehicles: [],
+  city: undefined,
+  distance: undefined,
+  latitude: undefined,
+  longitude: undefined
 };
 
 export const useFilterStore = create<FilterStore>()(
@@ -46,6 +51,10 @@ export const useFilterStore = create<FilterStore>()(
       
       setVehicles: (vehicles) => set((state) => ({
         filters: { ...state.filters, vehicles }
+      })),
+      
+      setLocation: (city, distance) => set((state) => ({
+        filters: { ...state.filters, city, distance }
       }))
     }),
     {

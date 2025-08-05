@@ -45,16 +45,18 @@ class IssueResponse(BaseModel):
         point = to_shape(value)
         return [float(point.x), float(point.y)]
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class IssueFilter(BaseModel):
-    """Modell für Event Filter Parameter"""
+    """Modell für Issue Filter Parameter"""
 
-    tag_ids: Optional[List[int]] = Field(None, description="Filter events by tag IDs")
+    tag_ids: Optional[List[int]] = Field(None, description="Filter issues by tag IDs")
     start_date: Optional[datetime] = Field(
-        None, description="Filter events starting from this date"
+        None, description="Filter issues starting from this date"
     )
     end_date: Optional[datetime] = Field(
-        None, description="Filter events until this date"
+        None, description="Filter issues until this date"
     )
     name: Optional[str] = Field(
         None, description="Filter issues by name (case-insensitive text search)"
@@ -62,5 +64,19 @@ class IssueFilter(BaseModel):
     description: Optional[str] = Field(
         None, description="Filter issues by description (case-insensitive text search)"
     )
+    
+    # Paginierung
+    page: int = Field(1, ge=1, description="Seitennummer (beginnend mit 1)")
+    limit: int = Field(10, ge=1, le=100, description="Anzahl der Issues pro Seite (max. 100)")
 
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
+
+
+class PaginatedIssueResponse(BaseModel):
+    """Paginierte Response für Issues"""
+    
+    issues: List[IssueResponse]
+    total_count: int = Field(description="Gesamtanzahl der Issues")
+    page: int = Field(description="Aktuelle Seitennummer")
+    limit: int = Field(description="Anzahl der Issues pro Seite")
+    total_pages: int = Field(description="Gesamtanzahl der Seiten")

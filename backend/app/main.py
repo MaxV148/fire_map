@@ -125,16 +125,27 @@ class SessionMiddleware(BaseHTTPMiddleware):
 
         # Sonderfall: 2FA temp session
         if path == "/api/v1/user/2fa/verify":
-            session_id = request.cookies.get(self.config.temp_session_cookie_id)
-            loguru.logger.debug(f"Session-ID TEMP: {session_id}")
-            if not session_id:
-                return self._unauthorized("Not authenticated (temp)")
-            session = self.session_manager.get_temp_session(session_id)
-            if not session:
-                return self._unauthorized("Invalid Temp session")
-            user_id = session.get(self.config.session_user_id_key)
-            setattr(request.state, self.config.session_user_id_key, user_id)
-            return await call_next(request)
+            session_id = request.cookies.get(self.config.session_cookie_id)
+            temp_session_id = request.cookies.get(self.config.temp_session_cookie_id)
+
+            session = None
+            if session_id:
+                session = self.session_manager.get_session(session_id)
+                if session:
+                    user_id = session.get(self.config.session_user_id_key)
+                    if user_id:
+                        setattr(request.state, self.config.session_user_id_key, user_id)
+                        return await call_next(request)
+
+            if temp_session_id:
+                temp_session = self.session_manager.get_temp_session(temp_session_id)
+                if temp_session:
+                    user_id = temp_session.get(self.config.session_user_id_key)
+                    if user_id:
+                        setattr(request.state, self.config.session_user_id_key, user_id)
+                        return await call_next(request)
+
+            return self._unauthorized("Not authenticated")
 
         # Öffentliche Routen
         if path in self.public_routes + self.public_routes_dev:

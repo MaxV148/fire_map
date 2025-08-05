@@ -1,4 +1,4 @@
-import { Card, Typography, Descriptions, Avatar, Button, message, Row, Col } from 'antd';
+import { Card, Typography, Descriptions, Avatar, Button, message, Row, Col, Modal, Input } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { useUserStore} from "../store/userStore.ts";
 import NavBase from "../components/NavBase.tsx";
@@ -9,11 +9,17 @@ const { Title, Text } = Typography;
 
 
 function ProfilePage() {
-    const {user, fetchMe} = useUserStore();
+    const user = useUserStore(state => state.user);
+    const fetchMe = useUserStore(state => state.fetchMe);
+    const disable2FA = useUserStore(state => state.disable2FA);
     const [twoFAModalVisible, setTwoFAModalVisible] = useState(false);
+    const [disableTwoFAModalVisible, setDisableTwoFAModalVisible] = useState(false);
+    const [disableCode, setDisableCode] = useState('');
+
+
+
 
     const handleTwoFASetupClick = () => {
-        console.log("handleTwoFASetupClick");
         setTwoFAModalVisible(true);
     };
 
@@ -25,6 +31,31 @@ function ProfilePage() {
         // Benutzerprofil neu laden, um den aktualisierten 2FA-Status zu erhalten
         await fetchMe();
         message.success('2FA wurde erfolgreich eingerichtet!');
+    };
+
+    const handleDisableTwoFAClick = () => {
+        setDisableTwoFAModalVisible(true);
+        setDisableCode('');
+    };
+
+    const handleDisableTwoFACancel = () => {
+        setDisableTwoFAModalVisible(false);
+        setDisableCode('');
+    };
+
+    const handleDisableTwoFAConfirm = async () => {
+        if (!disableCode.trim()) {
+            message.error('Bitte geben Sie Ihren 2FA-Code ein');
+            return;
+        }
+
+        const success = await disable2FA(disableCode, true);
+        if (success) {
+            message.success('2FA wurde erfolgreich deaktiviert!');
+            setDisableTwoFAModalVisible(false);
+            setDisableCode('');
+            await fetchMe();
+        }
     };
 
   if (!user) {
@@ -85,12 +116,22 @@ function ProfilePage() {
           </Card>
 
           <Card title="Sicherheit" style={{ marginBottom: '24px', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }}>
-              <Button
-                  type="primary"
-                  onClick={handleTwoFASetupClick}
-              >
-                  {user.otp_configured ? '2FA neu konfigurieren' : '2FA aktivieren'}
-              </Button>
+              {!user.otp_configured ? (
+                  <Button
+                      type="primary"
+                      onClick={handleTwoFASetupClick}
+                  >
+                      2FA aktivieren
+                  </Button>
+              ) : (
+                  <Button
+                      type="primary"
+                      danger
+                      onClick={handleDisableTwoFAClick}
+                  >
+                      2FA deaktivieren
+                  </Button>
+              )}
 
               <Button
                   style={{ marginLeft: '8px' }}
@@ -101,11 +142,29 @@ function ProfilePage() {
           </Card>
 
           <TwoFASetupModal
-              visible={twoFAModalVisible}
+              open={twoFAModalVisible}
               onCancel={handleTwoFAModalCancel}
               onSuccess={handleTwoFASetupSuccess}
               userEmail={user.email}
           />
+
+          <Modal
+              title="2FA deaktivieren"
+              open={disableTwoFAModalVisible}
+              onOk={handleDisableTwoFAConfirm}
+              onCancel={handleDisableTwoFACancel}
+              okText="Deaktivieren"
+              cancelText="Abbrechen"
+              okButtonProps={{ danger: true }}
+          >
+              <p>Um die Zwei-Faktor-Authentifizierung zu deaktivieren, geben Sie bitte Ihren aktuellen 2FA-Code ein:</p>
+              <Input
+                  placeholder="6-stelliger 2FA-Code"
+                  value={disableCode}
+                  onChange={(e) => setDisableCode(e.target.value)}
+                  maxLength={6}
+              />
+          </Modal>
       </div>);
 
 

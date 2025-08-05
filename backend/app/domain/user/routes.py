@@ -155,9 +155,7 @@ async def verify_2fa(
         )
 
     # If verification successful, mark 2FA as configured
-    current_user.otp_settings.otp_configured = True
-    otp_repo.save(current_user.otp_settings)
-
+    otp_repo.set_otp_enabled(current_user.id)
     # Handle session management only if there's a temp session (login flow)
     if temp_session_id:
         sid = session_manager.create_session(current_user.id)

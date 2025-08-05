@@ -1,8 +1,8 @@
 import loguru
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update, delete, and_
-from typing import List, Optional
-from geoalchemy2.functions import ST_GeomFromText
+from sqlalchemy import select, update, delete, and_, func
+from typing import List, Optional, Tuple
+from geoalchemy2.functions import ST_GeomFromText, ST_DWithin, ST_Transform
 from geoalchemy2.shape import to_shape
 from geoalchemy2.elements import WKBElement
 from datetime import datetime
@@ -12,6 +12,7 @@ from domain.event.dto import EventCreate, EventUpdate, EventFilter
 from domain.user.model import User
 from domain.tag.model import Tag
 from domain.vehicletype.model import VehicleType
+from infrastructure.geocoding import get_nominatim_service
 
 
 class EventRepository:
@@ -67,20 +68,20 @@ class EventRepository:
         result = self.db.execute(query).scalar_one_or_none()
         return result
 
-    def get_filtered_events(self, filters: EventFilter):
-        """Get events with database-side filtering"""
+    async def get_filtered_events(self, filters: EventFilter) -> Tuple[List[Event], int]:
+        """Get events with database-side filtering and pagination"""
         # Basis-Query erstellen
-        query = select(Event).distinct()
+        base_query = select(Event).distinct()
 
         # Filter für Fahrzeugtypen anwenden
         if filters.vehicle_ids:
-            query = query.join(Event.vehicles).where(
+            base_query = base_query.join(Event.vehicles).where(
                 VehicleType.id.in_(filters.vehicle_ids)
             )
 
         # Filter für Tags anwenden
         if filters.tag_ids:
-            query = query.join(Event.tags).where(Tag.id.in_(filters.tag_ids))
+            base_query = base_query.join(Event.tags).where(Tag.id.in_(filters.tag_ids))
 
         # Filter für Zeitraum anwenden
         conditions = []
@@ -97,11 +98,53 @@ class EventRepository:
         if filters.description:
             conditions.append(Event.description.ilike(f"%{filters.description}%"))
 
-        if conditions:
-            query = query.where(and_(*conditions))
+        # Distanz-Filter anwenden (Geo-Suche mit Geocoding)
+        if filters.city_name and filters.distance_km is not None:
+            try:
+                # Geocoding für den Stadtnamen durchführen
+                nominatim_service = get_nominatim_service()
+                geocode_result = await nominatim_service.geocode_city(filters.city_name)
+                
+                if geocode_result:
+                    # Erstelle einen Punkt aus den geocodierten Koordinaten
+                    search_point = ST_GeomFromText(
+                        f"POINT({geocode_result.longitude} {geocode_result.latitude})", 4326
+                    )
+                    # Konvertiere Distanz von Kilometern zu Metern für ST_DWithin
+                    distance_meters = filters.distance_km * 1000
+                    # Füge Distanz-Filter hinzu
+                    conditions.append(ST_DWithin(Event.location, search_point, distance_meters))
+                    
+                    loguru.logger.info(
+                        f"Geo-Filter angewendet: {filters.city_name} "
+                        f"({geocode_result.latitude}, {geocode_result.longitude}) "
+                        f"Radius: {filters.distance_km}km"
+                    )
+                else:
+                    loguru.logger.warning(f"Geocoding fehlgeschlagen für: {filters.city_name}")
+                    # Wenn Geocoding fehlschlägt, ignorieren wir den Geo-Filter
+                    
+            except Exception as e:
+                loguru.logger.error(f"Fehler beim Geocoding für {filters.city_name}: {str(e)}")
+                # Bei Fehlern ignorieren wir den Geo-Filter
 
-        result = self.db.execute(query).scalars().all()
-        return result
+        if conditions:
+            base_query = base_query.where(and_(*conditions))
+
+        # Gesamtanzahl ermitteln (für Paginierung)
+        count_query = select(func.count()).select_from(
+            base_query.subquery()
+        )
+        total_count = self.db.execute(count_query).scalar()
+
+        # Paginierung anwenden
+        offset = (filters.page - 1) * filters.limit
+        paginated_query = base_query.offset(offset).limit(filters.limit)
+
+        # Events abrufen
+        events = self.db.execute(paginated_query).scalars().all()
+        
+        return events, total_count
 
     def get_by_user(self, user_id: int) -> List[Event]:
         """Get all events created by a specific user"""

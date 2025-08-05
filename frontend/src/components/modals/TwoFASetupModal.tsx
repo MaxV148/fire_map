@@ -1,54 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Steps, Button, Input, message, Typography, Spin } from 'antd';
 import { QrcodeOutlined, SafetyOutlined } from '@ant-design/icons';
-import authService from '../../services/authService';
+import { useUserStore } from '../../store/userStore';
 
 const { Step } = Steps;
 const { Title, Text, Paragraph } = Typography;
 
 interface TwoFASetupModalProps {
-  visible: boolean;
+  open: boolean;
   onCancel: () => void;
   onSuccess: () => void;
   userEmail: string;
 }
 
 export const TwoFASetupModal: React.FC<TwoFASetupModalProps> = ({
-  visible,
+  open,
   onCancel,
   onSuccess,
   userEmail
 }) => {
+  const { setup2FA, verify2FA, error } = useUserStore();
   const [current, setCurrent] = useState(0);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [verificationCode, setVerificationCode] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-
-  useEffect(() => {
-    if (visible) {
-      setCurrent(0);
-      setQrCodeUrl('');
-      setVerificationCode('');
-      fetchQRCode();
-    }
-  }, [visible]);
+  const [isLoadingQR, setIsLoadingQR] = useState(false);
 
   const fetchQRCode = async () => {
-    setIsLoading(true);
     try {
-      const blob = await authService.setup2FA();
-      const url = URL.createObjectURL(blob);
-      setQrCodeUrl(url);
-    } catch (error) {
-      console.error('Fehler beim Laden des QR-Codes:', error);
-      message.error(error instanceof Error ? error.message : 'Fehler beim Laden des QR-Codes');
+      setIsLoadingQR(true);
+      
+      const url = await setup2FA();
+      
+      if (url) {
+        setQrCodeUrl(url);
+      } else {
+        message.error(error || 'Fehler beim Laden des QR-Codes');
+      }
+    } catch (err) {
+      console.error('Fehler beim Laden des QR-Codes:', err);
+      message.error('Unerwarteter Fehler beim Laden des QR-Codes');
     } finally {
-      setIsLoading(false);
+      setIsLoadingQR(false);
     }
   };
 
-  const verifyCode = async () => {
+  useEffect(() => {
+    if (open) {
+      setCurrent(0);
+      setQrCodeUrl('');
+      setVerificationCode('');
+      setIsLoadingQR(false);
+    }
+  }, [open]);
+
+  const verifyCode = useCallback(async () => {
     if (!verificationCode.trim()) {
       message.error('Bitte geben Sie den Verifikationscode ein');
       return;
@@ -56,20 +62,25 @@ export const TwoFASetupModal: React.FC<TwoFASetupModalProps> = ({
 
     setIsVerifying(true);
     try {
-      await authService.verify2FASetup(verificationCode);
-      message.success('2FA wurde erfolgreich aktiviert!');
-      setCurrent(2);
-      setTimeout(() => {
-        onSuccess();
-        onCancel();
-      }, 2000);
-    } catch (error) {
-      console.error('Fehler bei der Verifikation:', error);
-      message.error(error instanceof Error ? error.message : 'Verifikation fehlgeschlagen');
+      const success = await verify2FA(verificationCode);
+      if (success) {
+        message.success('2FA wurde erfolgreich aktiviert!');
+        setCurrent(2);
+        setTimeout(() => {
+          onSuccess();
+          onCancel();
+        }, 2000);
+      } else {
+        // Error wird vom userStore gesetzt
+        message.error(error || 'Verifikation fehlgeschlagen');
+      }
+    } catch (err) {
+      console.error('Fehler bei der Verifikation:', err);
+      message.error('Unerwarteter Fehler bei der Verifikation');
     } finally {
       setIsVerifying(false);
     }
-  };
+  }, [verificationCode, verify2FA, error, onSuccess, onCancel]);
 
   const handleNext = () => {
     if (current === 0) {
@@ -99,7 +110,16 @@ export const TwoFASetupModal: React.FC<TwoFASetupModalProps> = ({
             (z.B. Google Authenticator, Authy, Microsoft Authenticator).
           </Paragraph>
           
-          {isLoading ? (
+          {!qrCodeUrl && !isLoadingQR ? (
+            <div style={{ padding: '40px', textAlign: 'center' }}>
+              <Button type="primary" onClick={fetchQRCode}>
+                QR-Code laden
+              </Button>
+              <div style={{ marginTop: 16, fontSize: '12px', color: '#666' }}>
+                Klicken Sie hier, um den QR-Code für die Einrichtung zu laden.
+              </div>
+            </div>
+          ) : isLoadingQR ? (
             <div style={{ padding: '40px' }}>
               <Spin size="large" />
               <div style={{ marginTop: 16 }}>QR-Code wird geladen...</div>
@@ -185,7 +205,7 @@ export const TwoFASetupModal: React.FC<TwoFASetupModalProps> = ({
   return (
     <Modal
       title="Zwei-Faktor-Authentifizierung einrichten"
-      open={visible}
+      open={open}
       onCancel={handleCancel}
       width={600}
       footer={
@@ -197,14 +217,14 @@ export const TwoFASetupModal: React.FC<TwoFASetupModalProps> = ({
             key="next" 
             type="primary" 
             onClick={handleNext}
-            disabled={current === 0 && (!qrCodeUrl || isLoading)}
+            disabled={current === 0 && (!qrCodeUrl || isLoadingQR)}
             loading={isVerifying}
           >
             {current === 0 ? 'Weiter' : 'Verifizieren'}
           </Button>
         ] : []
       }
-      destroyOnClose
+      destroyOnHidden
     >
       <Steps current={current} style={{ marginBottom: 30 }}>
         {steps.map(item => (

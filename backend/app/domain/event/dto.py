@@ -50,7 +50,7 @@ class EventResponse(BaseModel):
     location: Optional[List[float]] = None
     tags: List[TagResponse]
     vehicles: List[VehicleTypeResponse]
-    created_by_user_id: int = None
+    created_by: Optional[int] = None
     created_at: datetime
 
     @field_validator("location", mode="before")
@@ -59,6 +59,8 @@ class EventResponse(BaseModel):
             return None
         point = to_shape(value)
         return [float(point.x), float(point.y)]
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EventFilter(BaseModel):
@@ -80,5 +82,27 @@ class EventFilter(BaseModel):
     description: Optional[str] = Field(
         None, description="Filter events by description (case-insensitive text search)"
     )
+    
+    # Standort-basierte Filter
+    city_name: Optional[str] = Field(
+        None, min_length=2, max_length=100, description="Stadtname für Distanzsuche"
+    )
+    distance_km: Optional[float] = Field(
+        None, ge=0.1, le=1000, description="Suchradius in Kilometern (0.1-1000km)"
+    )
+    
+    # Paginierung
+    page: int = Field(1, ge=1, description="Seitennummer (beginnend mit 1)")
+    limit: int = Field(10, ge=1, le=100, description="Anzahl der Events pro Seite (max. 100)")
 
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
+
+
+class PaginatedEventResponse(BaseModel):
+    """Paginierte Response für Events"""
+    
+    events: List[EventResponse]
+    total_count: int = Field(description="Gesamtanzahl der Events")
+    page: int = Field(description="Aktuelle Seitennummer")
+    limit: int = Field(description="Anzahl der Events pro Seite")
+    total_pages: int = Field(description="Gesamtanzahl der Seiten")

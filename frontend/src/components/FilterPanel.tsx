@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Card, Form, Select, DatePicker, Button, Divider, Space, Typography } from 'antd';
+import { Card, Form, Select, DatePicker, Button, Divider, Space, Typography, InputNumber, Input } from 'antd';
 import * as Icons from '@ant-design/icons';
 import type { RangePickerProps } from 'antd/es/date-picker';
 import dayjs from 'dayjs';
@@ -22,6 +22,12 @@ export interface FilterValues {
   tags?: number[];
   vehicles?: number[];
   view?: 'map' | 'list' | 'both';
+  // Standort-Filter
+  city?: string;
+  distance?: number;
+  // Interne Koordinaten (werden automatisch durch Geocoding gesetzt)
+  latitude?: number;
+  longitude?: number;
 }
 
 export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange }) => {
@@ -42,7 +48,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange }) => {
     form.setFieldsValue({
       dateRange: filters.dateRange,
       tags: filters.tags,
-      vehicles: filters.vehicles
+      vehicles: filters.vehicles,
+      city: filters.city,
+      distance: filters.distance
     });
   }, [fetchTags, fetchVehicles, form, filters]);
 
@@ -94,7 +102,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange }) => {
           severity: [],
           dateRange: null,
           tags: [],
-          vehicles: []
+          vehicles: [],
+          city: undefined,
+          distance: undefined
         }}
       >
         <Form.Item name="tags" label="Tags">
@@ -121,6 +131,39 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ onFilterChange }) => {
               <Option key={vehicle.id} value={vehicle.id}>{vehicle.name}</Option>
             ))}
           </Select>
+        </Form.Item>
+
+        <Divider orientation="left" style={{ margin: '12px 0' }}>
+          <span style={{ fontSize: '14px', fontWeight: 'normal' }}>
+            <Icons.EnvironmentOutlined /> Standort-Filter
+          </span>
+        </Divider>
+
+        <Form.Item 
+          name="city" 
+          label="Stadt"
+          help="Geben Sie einen Stadtnamen ein"
+        >
+          <Input
+            style={{ width: '100%' }}
+            placeholder="z.B. München, Berlin, Hamburg..."
+          />
+        </Form.Item>
+
+        <Form.Item 
+          name="distance" 
+          label="Suchradius (km)"
+          rules={[
+            { type: 'number', min: 0.1, max: 1000, message: 'Distanz muss zwischen 0.1 und 1000 km liegen' }
+          ]}
+        >
+          <InputNumber
+            style={{ width: '100%' }}
+            placeholder="z.B. 10"
+            step={0.1}
+            min={0.1}
+            max={1000}
+          />
         </Form.Item>
 
         <Form.Item name="dateRange" label="Zeitraum">

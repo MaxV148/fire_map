@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from infrastructure.postgresql.db import get_db
 from domain.user.model import User
 from domain.issue.repository import IssueRepository
-from domain.issue.dto import IssueCreate, IssueUpdate, IssueResponse, IssueFilter
+from domain.issue.dto import IssueCreate, IssueUpdate, IssueResponse, IssueFilter, PaginatedIssueResponse
 from dependencies.repository_dependencies import (
     get_issue_repository,
     get_user_repository,
@@ -30,12 +30,26 @@ def create_issue(
     return issue_repository.create(issue_data, current_user)
 
 
-@issue_router.get("", response_model=List[IssueResponse])
+@issue_router.get("", response_model=PaginatedIssueResponse)
 def get_all_issues(
     filters: Annotated[IssueFilter, Query()],
     issue_repository: IssueRepository = Depends(get_issue_repository),
 ):
-    return issue_repository.get_filtered_issues(filters)
+    """Get all issues with optional filtering and pagination"""
+    
+    # Verwende die Datenbankfilterung für effizientere Abfragen mit Paginierung
+    issues, total_count = issue_repository.get_filtered_issues(filters)
+    
+    # Paginierungsmetadaten berechnen
+    total_pages = (total_count + filters.limit - 1) // filters.limit
+    
+    return PaginatedIssueResponse(
+        issues=issues,
+        total_count=total_count,
+        page=filters.page,
+        limit=filters.limit,
+        total_pages=total_pages,
+    )
 
 
 @issue_router.get("/{issue_id}", response_model=IssueResponse)

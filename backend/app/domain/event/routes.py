@@ -13,7 +13,7 @@ from dependencies.repository_dependencies import (
     get_event_repository,
     get_user_repository,
 )
-from domain.event.dto import EventCreate, EventUpdate, EventResponse, EventFilter
+from domain.event.dto import EventCreate, EventUpdate, EventResponse, EventFilter, PaginatedEventResponse
 
 from domain.user.repository import UserRepository
 
@@ -35,17 +35,26 @@ def create_event(
     return event
 
 
-@event_router.get("", response_model=List[EventResponse])
-def get_all_events(
+@event_router.get("", response_model=PaginatedEventResponse)
+async def get_all_events(
     filters: Annotated[EventFilter, Query()],
     event_repository: EventRepository = Depends(get_event_repository),
 ):
-    """Get all events with optional filtering"""
+    """Get all events with optional filtering and pagination"""
 
-    # Verwende die Datenbankfilterung für effizientere Abfragen
-    events = event_repository.get_filtered_events(filters)
+    # Verwende die Datenbankfilterung für effizientere Abfragen mit Paginierung
+    events, total_count = await event_repository.get_filtered_events(filters)
 
-    return events
+    # Paginierungsmetadaten berechnen
+    total_pages = (total_count + filters.limit - 1) // filters.limit
+
+    return PaginatedEventResponse(
+        events=events,
+        total_count=total_count,
+        page=filters.page,
+        limit=filters.limit,
+        total_pages=total_pages,
+    )
 
 
 @event_router.get("/{event_id}", response_model=EventResponse)
