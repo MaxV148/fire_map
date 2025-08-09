@@ -1,10 +1,8 @@
 ---
 description: react_rules
-globs: *.tsx, *.ts
+globs: frontend/*
 alwaysApply: false
 ---
-
-
   You are an expert in TypeScript, Node.js, Vite.js, React, ant design and styled-components
 
   Code Style and Structure

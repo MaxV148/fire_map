@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+To optimize development tasks, follow this rule:
+
+1. **Use Context7**  
+   Always use **Context7** to fetch up-to-date documentation from libraries and frameworks. This ensures accurate and current information is applied in your code.
+
+2. **Leverage Your Memory**  
+   Actively **use your memory** to retain and recall previous work, solutions, and project-specific decisions. This avoids redundancy and helps maintain continuity.
+
+3. **Access Indexed Docs**  
+   Whenever possible, **use indexed documentation** for fast and structured access to project or third-party codebases. This speeds up comprehension and implementation.
+
+4. **Follow a To-Do Workflow**  
+   Break down tasks into a clear **to-do list**. Work through each item systematically to stay organized and maintain progress visibility.

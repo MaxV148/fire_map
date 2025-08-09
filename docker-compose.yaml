@@ -11,25 +11,25 @@ services:
       - POSTGRES_USER=root
       - POSTGRES_DB=fire_backend
 
-  backend:
-    build: ./backend/.
-    volumes:
-      - ./backend/app:/app/app
-      - ./backend/mail_templates:/app/mail_templates
-    ports:
-      - "8000:8000"
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=root
-      - DB_PASSWORD=test123
-      - DB_NAME=fire_backend
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_DB=0
-    depends_on:
-      - postgres
-      - redis
+#  backend:
+#    build: ./backend/.
+#    volumes:
+#      - ./backend/app:/app/app
+#      - ./backend/mail_templates:/app/mail_templates
+#    ports:
+#      - "8000:8000"
+#    environment:
+#      - DB_HOST=postgres
+#      - DB_PORT=5432
+#      - DB_USER=root
+#      - DB_PASSWORD=test123
+#      - DB_NAME=fire_backend
+#      - REDIS_HOST=redis
+#      - REDIS_PORT=6379
+#      - REDIS_DB=0
+#    depends_on:
+#      - postgres
+#      - redis
 
   mailserver:
     image: axllent/mailpit
