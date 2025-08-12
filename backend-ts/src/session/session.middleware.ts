@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Response, NextFunction } from 'express';
+import { NextFunction, Response } from 'express';
 import { SessionService } from './session.service';
 import { AuthenticatedRequest } from '../types/request.interface';
 
@@ -35,6 +35,15 @@ export class SessionMiddleware implements NestMiddleware {
 
       if (!sessionData) {
         throw new UnauthorizedException('Session ist ungültig oder abgelaufen');
+      }
+
+      // Wenn 2FA noch aussteht, dürfen nur die 2FA-Verify-Login bzw. 2FA-Verify-Setup Routen zugreifen
+      if ((sessionData as any).twoFactorPending === true) {
+        const isTwoFaVerifyLogin = req.method === 'POST' && req.originalUrl?.startsWith('/auth/2fa/login-verify');
+        const isTwoFaVerifySetup = req.method === 'POST' && req.originalUrl?.startsWith('/auth/2fa/verify');
+        if (!isTwoFaVerifyLogin && !isTwoFaVerifySetup) {
+          throw new UnauthorizedException('Two-factor authentication required');
+        }
       }
 
       // Füge userId und Rolle zum Request hinzu

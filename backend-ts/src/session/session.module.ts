@@ -1,7 +1,7 @@
 import {
+  MiddlewareConsumer,
   Module,
   NestModule,
-  MiddlewareConsumer,
   RequestMethod,
 } from '@nestjs/common';
 import { SessionService } from './session.service';

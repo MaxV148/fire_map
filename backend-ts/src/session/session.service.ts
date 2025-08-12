@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
-import { randomBytes, createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { SessionDto } from './dto/session.dto';
 
 @Injectable()
 export class SessionService {
   constructor(@InjectRedis() private readonly redis: Redis) {}
+
   async createSession(
     sessionId: string,
     expireAfterSec: number,
@@ -18,6 +19,7 @@ export class SessionService {
       JSON.stringify(sessionData),
     );
   }
+
   async getSession(sessionId: string): Promise<SessionDto | null> {
     const sessionData = await this.redis.get(sessionId);
 
@@ -25,11 +27,12 @@ export class SessionService {
       return null;
     }
 
-    const parsedData: SessionDto = JSON.parse(sessionData);
+    const parsedData: any = JSON.parse(sessionData);
     return new SessionDto(
       parsedData.userId,
       parsedData.role,
       parsedData.createdAt,
+      parsedData.twoFactorPending,
     );
   }
 

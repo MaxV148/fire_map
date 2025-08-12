@@ -9,6 +9,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { InvitesModule } from './invites/invites.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { MailModule } from './mail/mail.module';
 import { Event } from './events/entities/event.entity';
 import { RolesModule } from './roles/roles.module';
 import { OtpSettingsModule } from './otp-settings/otp-settings.module';
@@ -22,9 +24,42 @@ import { Invite } from './invites/entities/invite.entity';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { SessionModule } from './session/session.module';
 import configuration from './configuration';
+import path from 'path';
+import * as process from 'node:process';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 
 @Module({
   imports: [
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.MAIL_HOST || 'localhost',
+        port: Number(process.env.MAIL_PORT) || 1025,
+        ignoreTLS: true,
+        secure: false,
+        auth:
+          process.env.MAIL_USER && process.env.MAIL_PASS
+            ? {
+                user: process.env.MAIL_USER,
+                pass: process.env.MAIL_PASS,
+              }
+            : undefined,
+      },
+      template: {
+        dir: path.join(
+          process.cwd(),
+          process.env.NODE_ENV === 'production'
+            ? 'dist/mail_templates'
+            : 'mail_templates',
+        ),
+        adapter: new HandlebarsAdapter(),
+        options: {
+          strict: true,
+        },
+      },
+      defaults: {
+        from: '"No Reply" <no-reply@localhost>',
+      },
+    }),
     ConfigModule.forRoot({
       load: [configuration],
       isGlobal: true,
@@ -59,6 +94,7 @@ import configuration from './configuration';
     RolesModule,
     OtpSettingsModule,
     SessionModule,
+    MailModule,
   ],
   controllers: [],
   providers: [AppService],

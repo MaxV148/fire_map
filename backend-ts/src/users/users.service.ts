@@ -113,6 +113,13 @@ export class UsersService {
     });
   }
 
+  /**
+   * Updates a user's password with a new already-hashed password.
+   */
+  async updatePassword(userId: number, hashedPassword: string): Promise<void> {
+    await this.userRepository.update({ id: userId }, { password: hashedPassword });
+  }
+
   update(id: number, updateUserDto: UpdateUserDto) {
     return `This action updates a #${id} user`;
   }

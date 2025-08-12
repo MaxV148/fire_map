@@ -1,4 +1,4 @@
-import { IsString, IsDateString } from 'class-validator';
+import { IsString, IsDateString, IsBoolean, IsOptional } from 'class-validator';
 
 export class SessionDto {
   @IsString()
@@ -10,9 +10,14 @@ export class SessionDto {
   @IsDateString()
   createdAt: string;
 
-  constructor(userId: string, role: string, createdAt?: string) {
+  @IsOptional()
+  @IsBoolean()
+  twoFactorPending?: boolean;
+
+  constructor(userId: string, role: string, createdAt?: string, twoFactorPending?: boolean) {
     this.userId = userId;
     this.role = role;
     this.createdAt = createdAt || new Date().toISOString();
+    this.twoFactorPending = twoFactorPending;
   }
 }

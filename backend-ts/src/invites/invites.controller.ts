@@ -1,42 +1,52 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { InvitesService } from './invites.service';
 import { CreateInviteDto } from './dto/create-invite.dto';
-import { UpdateInviteDto } from './dto/update-invite.dto';
+import { InviteListDto, InviteResponseDto } from './dto/invite-response.dto';
+import type { Request } from 'express';
+import { UserId } from '../decorators/user-id.decorator';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('invites')
+@UseGuards(AdminGuard)
 export class InvitesController {
   constructor(private readonly invitesService: InvitesService) {}
 
   @Post()
-  create(@Body() createInviteDto: CreateInviteDto) {
-    return this.invitesService.create(createInviteDto);
+  async create(
+    @Body() dto: CreateInviteDto,
+    @Req() req: Request,
+    @UserId() userId: string,
+  ): Promise<InviteResponseDto> {
+    return this.invitesService.createInvite(dto, req, userId);
   }
 
   @Get()
-  findAll() {
-    return this.invitesService.findAll();
+  async findAll(
+    @Query('skip') skip: number = 0,
+    @Query('limit') limit: number = 100,
+  ): Promise<InviteListDto> {
+    return this.invitesService.listInvites(skip, limit);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.invitesService.findOne(+id);
+  @Get(':inviteUuid')
+  async findOne(
+    @Param('inviteUuid') inviteUuid: string,
+  ): Promise<InviteResponseDto> {
+    return this.invitesService.getInviteByUuid(inviteUuid);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateInviteDto: UpdateInviteDto) {
-    return this.invitesService.update(+id, updateInviteDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.invitesService.remove(+id);
+  @Delete(':inviteUuid')
+  async remove(@Param('inviteUuid') inviteUuid: string): Promise<void> {
+    return this.invitesService.deleteInvite(inviteUuid);
   }
 }
